@@ -385,4 +385,21 @@ document.addEventListener('keydown',e=>{if(e.key==='Escape')closeModal();});
 loadData();buildTZSelect();updateTZ();
 </script>
 </body>
+  // Import the functions you need from the SDKs you need
+import { initializeApp } from "firebase/app";
+// TODO: Add SDKs for Firebase products that you want to use
+// https://firebase.google.com/docs/web/setup#available-libraries
+
+// Your web app's Firebase configuration
+const firebaseConfig = {
+  apiKey: "AIzaSyD931NXk1WUR-No5RJRav4HPZ4rqQNfxj4",
+  authDomain: "huayu-schedule.firebaseapp.com",
+  projectId: "huayu-schedule",
+  storageBucket: "huayu-schedule.firebasestorage.app",
+  messagingSenderId: "921832358090",
+  appId: "1:921832358090:web:1194e7f49aca55907bb433"
+};
+
+// Initialize Firebase
+const app = initializeApp(firebaseConfig);
 </html>
