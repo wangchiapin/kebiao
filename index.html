@@ -5,6 +5,10 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>華語課表</title>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+<!-- 引入 Firebase 核心與 Firestore 資料庫 SDK (相容舊版瀏覽器寫法) -->
+<script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore-compat.js"></script>
+
 <style>
 *{box-sizing:border-box;margin:0;padding:0}
 body{background:#fff;color:#222;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;font-size:12px;padding:12px}
@@ -20,7 +24,7 @@ button.export-btn{background:#E6F1FB;color:#0C447C;border-color:#B5D4F4}
 .tz-bar{display:flex;align-items:center;gap:8px;margin-bottom:14px;padding:8px 12px;background:#f8f8f8;border-radius:8px;border:1px solid #eee;flex-wrap:wrap}
 .tz-bar label{font-size:12px;color:#666}
 .tz-bar select{font-size:13px;padding:4px 8px;border-radius:6px;border:1px solid #ccc;background:#fff;color:#222}
-.diff-badge{font-size:12px;color:#666}
+.diff-badge" {font-size:12px;color:#666}
 .diff-badge b{font-weight:500;color:#222}
 .sec{font-size:13px;font-weight:500;color:#222;margin-bottom:6px;margin-top:20px;padding-bottom:4px;border-bottom:1px solid #eee;display:flex;align-items:center;gap:6px}
 .sec:first-of-type{margin-top:0}
@@ -99,7 +103,7 @@ table.income tfoot td{font-weight:500;background:#f8f8f8}
 <body>
 <div class="top-bar">
   <h1>華語課表</h1>
-  <span class="save-status" id="save-status">✓ 已儲存</span>
+  <span class="save-status" id="save-status">⏳ 正在連線雲端...</span>
   <button class="danger" onclick="clearAll()">清空</button>
 </div>
 <div class="tz-bar">
@@ -123,7 +127,7 @@ table.income tfoot td{font-weight:500;background:#f8f8f8}
 <div class="legend" id="legend"></div>
 
 <div class="sec" style="margin-top:22px">
-  🕓 空檔時間
+  存放 空檔時間
   <div class="sec-actions">
     <button class="export-btn" onclick="exportFreeImage('tw')">匯出台灣時間 🖼</button>
     <button class="export-btn" onclick="exportFreeImage('ot')">匯出對照時區 🖼</button>
@@ -166,10 +170,24 @@ table.income tfoot td{font-weight:500;background:#f8f8f8}
 <div id="modal-mount"></div>
 
 <script>
+// --- Firebase 初始化與配置 ---
+const firebaseConfig = {
+  apiKey: "AIzaSyD931NXk1WUR-No5RJRav4HPZ4rqQNfxj4",
+  authDomain: "huayu-schedule.firebaseapp.com",
+  projectId: "huayu-schedule",
+  storageBucket: "huayu-schedule.firebasestorage.app",
+  messagingSenderId: "921832358090",
+  appId: "1:921832358090:web:1194e7f49aca55907bb433"
+};
+
+firebase.initializeApp(firebaseConfig);
+const db = firebase.firestore();
+// 使用單一文件來同步所有資料
+const docRef = db.collection("appData").doc("scheduleMain");
+
 const DAYS=['一','二','三','四','五','六','日'];
 const HOURS=[];for(let h=7;h<22;h++)HOURS.push(h);
 const MONTHLY_MULT=4;
-const STORAGE_KEY='huayu_schedule_v1';
 const TZ_LIST=[
   {name:'── 北美洲 ──',tz:null,disabled:true},
   {name:'美國 紐約（東部）',tz:'America/New_York'},
@@ -213,22 +231,47 @@ const COLORS={
 const COLOR_KEYS=Object.keys(COLORS);
 let schedule={},rates={},currentTZ=null,diffMin=0,currentCell=null,saveTimer=null;
 
+// 雲端儲存邏輯 (取代舊的 localStorage)
 function saveData(){
   setSaveStatus('saving');
-  try{localStorage.setItem(STORAGE_KEY,JSON.stringify({schedule,rates}));setSaveStatus('saved');}
-  catch(e){setSaveStatus('error');}
+  docRef.set({
+    schedule: schedule,
+    rates: rates,
+    updatedAt: firebase.firestore.FieldValue.serverTimestamp()
+  })
+  .then(() => { setSaveStatus('saved'); })
+  .catch(e => { console.error(e); setSaveStatus('error'); });
 }
-function loadData(){
-  try{const r=localStorage.getItem(STORAGE_KEY);if(r){const p=JSON.parse(r);if(p.schedule)schedule=p.schedule;if(p.rates)rates=p.rates;}}
-  catch(e){}
+
+// 監聽雲端即時資料變動 (手機電腦同步核心)
+function listenCloudData(){
+  docRef.onSnapshot(doc => {
+    if(doc.exists){
+      const data = doc.data();
+      if(data.schedule) schedule = data.schedule;
+      if(data.rates) rates = data.rates;
+      setSaveStatus('saved');
+      renderSched();
+    } else {
+      // 第一次使用若雲端沒資料，就初始化
+      setSaveStatus('saved');
+      renderSched();
+    }
+  }, err => {
+    console.error("雲端連線失敗:", err);
+    setSaveStatus('error');
+  });
 }
+
 function setSaveStatus(s){
   const el=document.getElementById('save-status');if(!el)return;
-  if(s==='saving'){el.textContent='⏳ 儲存中...';el.className='save-status saving';}
-  else if(s==='saved'){el.textContent='✓ 已儲存';el.className='save-status saved';}
-  else{el.textContent='⚠ 儲存失敗';el.className='save-status';}
+  if(s==='saving'){el.textContent='⏳ 雲端同步中...';el.className='save-status saving';}
+  else if(s==='saved'){el.textContent='✓ 雲端已同步';el.className='save-status saved';}
+  else{el.textContent='⚠ 同步失敗 (請檢查Firebase規則)';el.className='save-status';}
 }
+
 function scheduleSave(){clearTimeout(saveTimer);saveTimer=setTimeout(saveData,600);}
+
 function getOffsetDiff(tz){
   try{
     const base=new Date(2026,3,29,12,0,0);
@@ -248,11 +291,11 @@ function fmtDiff(d){const s=d>=0?'+':'-';const a=Math.abs(d);return s+Math.floor
 function cellKey(h,di){return h+'_'+di;}
 function isBusy(h,di){return !!schedule[cellKey(h,di)];}
 function getStudents(){
-  const map={};Object.values(schedule).forEach(e=>{if(!map[e.name])map[e.name]=e.color;});
+  const map={};Object.values(schedule).forEach(e=>{if(e && e.name && !map[e.name])map[e.name]=e.color;});
   return Object.fromEntries(Object.entries(map).sort((a,b)=>a[0].localeCompare(b[0])));
 }
-function sessionCount(name){return Object.values(schedule).filter(e=>e.name===name).length;}
-function incomePerDay(di){let t=0;HOURS.forEach(h=>{const e=schedule[cellKey(h,di)];if(e)t+=(rates[e.name]||0);});return t;}
+function sessionCount(name){return Object.values(schedule).filter(e=>e && e.name===name).length;}
+function incomePerDay(di){let t=0;HOURS.forEach(h=>{const e=schedule[cellKey(h,di)];if(e && e.name)t+=(rates[e.name]||0);});return t;}
 function buildTZSelect(){
   const sel=document.getElementById('tz-select');let first=-1;
   TZ_LIST.forEach((t,i)=>{const o=document.createElement('option');o.value=i;o.textContent=t.name;if(t.disabled)o.disabled=true;else if(first<0)first=i;sel.appendChild(o);});
@@ -283,13 +326,13 @@ function renderSchedBody(tid,isTW){
       const cell=document.createElement('td');const key=cellKey(h,di);const entry=schedule[key];
       if(isTW){
         cell.className='cell';
-        if(entry){const c=COLORS[entry.color]||COLORS.blue;const rv=rates[entry.name]||0;
+        if(entry && entry.name){const c=COLORS[entry.color]||COLORS.blue;const rv=rates[entry.name]||0;
           cell.innerHTML=`<div class="chip" style="background:${c.bg};color:${c.text}"><span class="name">${entry.name}</span>${rv>0?'<span class="rate-tag">NT$'+rv.toLocaleString()+'</span>':''}<button class="del" onclick="deleteEntry(event,'${key}')">✕</button></div>`;
         }else{cell.innerHTML='<div class="plus">+</div>';}
-        cell.addEventListener('click',()=>openModal(h,di,key));
+        cell.onclick = () => openModal(h,di,key);
       }else{
         cell.className='cell mirror';
-        if(entry){const c=COLORS[entry.color]||COLORS.blue;cell.innerHTML=`<div class="chip mirror-chip" style="background:${c.bg};color:${c.text}"><span class="name">${entry.name}</span></div>`;}
+        if(entry && entry.name){const c=COLORS[entry.color]||COLORS.blue;cell.innerHTML=`<div class="chip mirror-chip" style="background:${c.bg};color:${c.text}"><span class="name">${entry.name}</span></div>`;}
       }
       tr.appendChild(cell);
     });
@@ -323,8 +366,8 @@ function renderIncomeTable(){
   const totalSessions=Object.keys(students).reduce((a,n)=>a+sessionCount(n),0);const monthlyTotal=weeklyTotal*MONTHLY_MULT;
   tfoot.innerHTML=`<tr><td></td><td style="font-weight:500">合計</td><td></td><td class="num" style="font-weight:500">${totalSessions}</td><td class="num" style="font-weight:500">${weeklyTotal>0?'NT$ '+weeklyTotal.toLocaleString():'—'}</td><td class="num" style="font-weight:500">${monthlyTotal>0?'NT$ '+monthlyTotal.toLocaleString():'—'}</td></tr>`;
   document.querySelectorAll('.rate-input').forEach(inp=>{
-    inp.addEventListener('keydown',e=>{if(e.key==='Enter'){e.preventDefault();inp.blur();commitRate(inp.dataset.name,inp.value);}});
-    inp.addEventListener('blur',()=>{commitRate(inp.dataset.name,inp.value);});
+    inp.onkeydown = e=>{if(e.key==='Enter'){e.preventDefault();inp.blur();commitRate(inp.dataset.name,inp.value);}};
+    inp.onblur = ()=>{commitRate(inp.dataset.name,inp.value);};
   });
 }
 function renderDayGrid(){
@@ -365,7 +408,7 @@ function exportFreeImage(side){
   table.appendChild(tbody);wrap.appendChild(table);document.body.appendChild(wrap);
   html2canvas(wrap,{scale:2,backgroundColor:'#ffffff',useCORS:true}).then(canvas=>{
     document.body.removeChild(wrap);const link=document.createElement('a');link.download=filename;link.href=canvas.toDataURL('image/png');link.click();
-  }).catch(err=>{document.body.removeChild(wrap);alert('匯出失敗：'+err.message);});
+  }).catch(err=>{if(document.body.contains(wrap))document.body.removeChild(wrap);alert('匯出失敗：'+err.message);});
 }
 function openModal(h,di,key){
   currentCell={h,di,key};const e=schedule[key]||{};
@@ -382,24 +425,10 @@ function deleteEntry(e,key){e.stopPropagation();delete schedule[key];renderSched
 function clearAll(){if(confirm('確定要清空整張課表嗎？')){schedule={};rates={};renderSched();scheduleSave();}}
 document.addEventListener('keydown',e=>{if(e.key==='Escape')closeModal();});
 
-loadData();buildTZSelect();updateTZ();
+buildTZSelect();
+updateTZ();
+// 啟動雲端即時監聽
+listenCloudData();
 </script>
 </body>
-  // Import the functions you need from the SDKs you need
-import { initializeApp } from "firebase/app";
-// TODO: Add SDKs for Firebase products that you want to use
-// https://firebase.google.com/docs/web/setup#available-libraries
-
-// Your web app's Firebase configuration
-const firebaseConfig = {
-  apiKey: "AIzaSyD931NXk1WUR-No5RJRav4HPZ4rqQNfxj4",
-  authDomain: "huayu-schedule.firebaseapp.com",
-  projectId: "huayu-schedule",
-  storageBucket: "huayu-schedule.firebasestorage.app",
-  messagingSenderId: "921832358090",
-  appId: "1:921832358090:web:1194e7f49aca55907bb433"
-};
-
-// Initialize Firebase
-const app = initializeApp(firebaseConfig);
 </html>
