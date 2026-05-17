@@ -5,7 +5,6 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>華語課表</title>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
-<!-- 引入 Firebase 核心與 Firestore 資料庫 SDK (相容舊版瀏覽器寫法) -->
 <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore-compat.js"></script>
 
@@ -24,7 +23,7 @@ button.export-btn{background:#E6F1FB;color:#0C447C;border-color:#B5D4F4}
 .tz-bar{display:flex;align-items:center;gap:8px;margin-bottom:14px;padding:8px 12px;background:#f8f8f8;border-radius:8px;border:1px solid #eee;flex-wrap:wrap}
 .tz-bar label{font-size:12px;color:#666}
 .tz-bar select{font-size:13px;padding:4px 8px;border-radius:6px;border:1px solid #ccc;background:#fff;color:#222}
-.diff-badge" {font-size:12px;color:#666}
+.diff-badge{font-size:12px;color:#666}
 .diff-badge b{font-weight:500;color:#222}
 .sec{font-size:13px;font-weight:500;color:#222;margin-bottom:6px;margin-top:20px;padding-bottom:4px;border-bottom:1px solid #eee;display:flex;align-items:center;gap:6px}
 .sec:first-of-type{margin-top:0}
@@ -34,9 +33,12 @@ button.export-btn{background:#E6F1FB;color:#0C447C;border-color:#B5D4F4}
 .panel-header.other{background:#E1F5EE;color:#085041;border-color:#9FE1CB}
 .panel-header.free-tw{background:#FEF3E2;color:#7A4500;border-color:#F5C87A}
 .panel-header.free-ot{background:#F0F4FF;color:#1A3A8F;border-color:#A8BEF5}
+
+/* 電腦版：左右並排 */
 .dual{display:grid;grid-template-columns:minmax(0,1fr) 22px minmax(0,1fr);gap:0;align-items:start}
 .arrow-col{display:flex;flex-direction:column;align-items:center;padding-top:27px}
 .arrow-row{height:44px;display:flex;align-items:center;justify-content:center;color:#bbb;font-size:11px}
+
 .tbl-wrap{overflow-x:auto}
 table.sched{width:100%;border-collapse:collapse;table-layout:fixed}
 table.sched th{font-size:10px;font-weight:500;color:#555;padding:4px 2px;border:1px solid #ddd;text-align:center;background:#f5f5f5}
@@ -68,14 +70,7 @@ table.income tfoot td{font-weight:500;background:#f8f8f8}
 .rate-input:focus{outline:none;border-color:#4a90d9;box-shadow:0 0 0 2px rgba(74,144,217,0.15)}
 .sdot{width:10px;height:10px;border-radius:2px;display:inline-block}
 .cards{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:10px;margin-top:8px}
-@media(max-width:600px){.cards{grid-template-columns:repeat(2,1fr)}}
-.card{background:#f8f8f8;border-radius:8px;padding:12px 14px}
-.card.highlight{background:#FEF3E2;border:1px solid #F5C87A}
-.card-label{font-size:11px;color:#666;margin-bottom:4px}
-.card.highlight .card-label{color:#7A4500}
-.card-value{font-size:17px;font-weight:500;color:#222;line-height:1.2}
-.card.highlight .card-value{color:#7A4500}
-.card-sub{font-size:11px;color:#aaa;margin-top:2px}
+
 .day-grid{display:grid;grid-template-columns:repeat(7,minmax(0,1fr));gap:6px;margin-top:8px}
 .day-card{background:#f8f8f8;border-radius:8px;padding:8px 6px;text-align:center}
 .day-name{font-size:10px;color:#888;margin-bottom:3px}
@@ -98,6 +93,25 @@ table.income tfoot td{font-weight:500;background:#f8f8f8}
 .export-wrap td.ec{border:1px solid #ccc;padding:2px;height:36px;vertical-align:middle}
 .export-libre{background:#FDE68A;height:100%;display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:700;color:#111;border-radius:3px}
 .export-busy{background:#1a1a1a;height:100%;border-radius:3px}
+
+/* 手機版響應式修正 (寬度 768px 以下生效) */
+@media(max-width:768px){
+  .dual {
+    grid-template-columns: 1fr; /* 改成單欄上下堆疊 */
+    gap: 15px;
+  }
+  .arrow-col {
+    display: none; /* 手機版隱藏中間的箭頭 */
+  }
+  .cards{
+    grid-template-columns: repeat(2,1fr);
+  }
+  /* 讓課表在寬度不夠時可以左右滑動，不被壓縮 */
+  table.sched {
+    table-layout: auto; 
+    min-width: 480px; 
+  }
+}
 </style>
 </head>
 <body>
@@ -127,7 +141,7 @@ table.income tfoot td{font-weight:500;background:#f8f8f8}
 <div class="legend" id="legend"></div>
 
 <div class="sec" style="margin-top:22px">
-  存放 空檔時間
+  🕓 空檔時間
   <div class="sec-actions">
     <button class="export-btn" onclick="exportFreeImage('tw')">匯出台灣時間 🖼</button>
     <button class="export-btn" onclick="exportFreeImage('ot')">匯出對照時區 🖼</button>
@@ -146,20 +160,22 @@ table.income tfoot td{font-weight:500;background:#f8f8f8}
 </div>
 
 <div class="sec" style="margin-top:22px">💰 學生收費設定</div>
-<table class="income">
-  <thead>
-    <tr>
-      <th style="width:24px"></th>
-      <th>學生</th>
-      <th class="num">每堂收費（NT$）</th>
-      <th class="num">每週堂數</th>
-      <th class="num">每週收入</th>
-      <th class="num">每月預估</th>
-    </tr>
-  </thead>
-  <tbody id="rate-body"></tbody>
-  <tfoot id="rate-foot"></tfoot>
-</table>
+<div style="overflow-x: auto;">
+  <table class="income">
+    <thead>
+      <tr>
+        <th style="width:24px"></th>
+        <th>學生</th>
+        <th class="num">每堂收費（NT$）</th>
+        <th class="num">每週堂數</th>
+        <th class="num">每週收入</th>
+        <th class="num">每月預估</th>
+      </tr>
+    </thead>
+    <tbody id="rate-body"></tbody>
+    <tfoot id="rate-foot"></tfoot>
+  </table>
+</div>
 <p class="note">每月預估 = 每週收入 × 4 週</p>
 
 <div class="sec" style="margin-top:22px">📆 每日收入</div>
@@ -182,7 +198,6 @@ const firebaseConfig = {
 
 firebase.initializeApp(firebaseConfig);
 const db = firebase.firestore();
-// 使用單一文件來同步所有資料
 const docRef = db.collection("appData").doc("scheduleMain");
 
 const DAYS=['一','二','三','四','五','六','日'];
@@ -200,7 +215,7 @@ const TZ_LIST=[
   {name:'加拿大 多倫多',tz:'America/Toronto'},
   {name:'加拿大 溫哥華',tz:'America/Vancouver'},
   {name:'加拿大 溫尼伯',tz:'America/Winnipeg'},
-  {name:'墨西哥 墨西哥城',tz:'America/Mexico_City'},
+  {name:'Mexico 墨西哥城',tz:'America/Mexico_City'},
   {name:'── 中美洲／加勒比海 ──',tz:null,disabled:true},
   {name:'瓜地馬拉',tz:'America/Guatemala'},
   {name:'哥斯大黎加',tz:'America/Costa_Rica'},
@@ -231,7 +246,6 @@ const COLORS={
 const COLOR_KEYS=Object.keys(COLORS);
 let schedule={},rates={},currentTZ=null,diffMin=0,currentCell=null,saveTimer=null;
 
-// 雲端儲存邏輯 (取代舊的 localStorage)
 function saveData(){
   setSaveStatus('saving');
   docRef.set({
@@ -243,7 +257,6 @@ function saveData(){
   .catch(e => { console.error(e); setSaveStatus('error'); });
 }
 
-// 監聽雲端即時資料變動 (手機電腦同步核心)
 function listenCloudData(){
   docRef.onSnapshot(doc => {
     if(doc.exists){
@@ -253,7 +266,6 @@ function listenCloudData(){
       setSaveStatus('saved');
       renderSched();
     } else {
-      // 第一次使用若雲端沒資料，就初始化
       setSaveStatus('saved');
       renderSched();
     }
@@ -427,7 +439,6 @@ document.addEventListener('keydown',e=>{if(e.key==='Escape')closeModal();});
 
 buildTZSelect();
 updateTZ();
-// 啟動雲端即時監聽
 listenCloudData();
 </script>
 </body>
