@@ -218,28 +218,10 @@ const db = firebase.firestore();
 const docRef = db.collection("appData").doc("scheduleMain");
 
 const DAYS=['一','二','三','四','五','六','日'];
-const HOURS=[];for(let h=0;h<24;h++)HOURS.push(h);
+const HOURS=[];for(let h=7;h<22;h++)HOURS.push(h); // 依然維持精簡的 15 列
 const MONTHLY_MULT=4;
 const TZ_LIST=[
-  {name:'── 拉丁美洲 ──',tz:null,disabled:true},
-  {name:'Mexico 墨西哥城',tz:'America/Mexico_City'}, 
-  {name:'秘魯 利馬',tz:'America/Lima'},
-  {name:'智利 聖地牙哥',tz:'America/Santiago'},
-  {name:'瓜地馬拉',tz:'America/Guatemala'},
-  {name:'哥斯大黎加',tz:'America/Costa_Rica'},
-  {name:'巴拿馬',tz:'America/Panama'},
-  {name:'古巴 哈瓦那',tz:'America/Havana'},
-  {name:'波多黎各',tz:'America/Puerto_Rico'},
-  {name:'哥倫比亞 波哥大',tz:'America/Bogota'},
-  {name:'厄瓜多 基多',tz:'America/Guayaquil'},
-  {name:'委內瑞拉 卡拉卡斯',tz:'America/Caracas'},
-  {name:'玻利維亞 拉巴斯',tz:'America/La_Paz'},
-  {name:'阿根廷 布宜諾斯艾利斯',tz:'America/Argentina/Buenos_Aires'},
-  {name:'巴西 聖保羅',tz:'America/Sao_Paulo'},
-  {name:'巴西 馬瑙斯',tz:'America/Manaus'},
-  {name:'烏拉圭 蒙特維多',tz:'America/Montevideo'},
-  {name:'巴拉圭 亞松森',tz:'America/Asuncion'},
-  {name:'── 美加 ──',tz:null,disabled:true},
+  {name:'── 北美洲 ──',tz:null,disabled:true},
   {name:'美國 紐約（東部）',tz:'America/New_York'},
   {name:'美國 芝加哥（中部）',tz:'America/Chicago'},
   {name:'美國 丹佛（山地）',tz:'America/Denver'},
@@ -250,6 +232,25 @@ const TZ_LIST=[
   {name:'加拿大 多倫多',tz:'America/Toronto'},
   {name:'加拿大 溫哥華',tz:'America/Vancouver'},
   {name:'加拿大 溫尼伯',tz:'America/Winnipeg'},
+  {name:'Mexico 墨西哥城',tz:'America/Mexico_City'},
+  {name:'── 中美洲／加勒比海 ──',tz:null,disabled:true},
+  {name:'瓜地馬拉',tz:'America/Guatemala'},
+  {name:'哥斯大黎加',tz:'America/Costa_Rica'},
+  {name:'巴拿馬',tz:'America/Panama'},
+  {name:'古巴 哈瓦那',tz:'America/Havana'},
+  {name:'波多黎各',tz:'America/Puerto_Rico'},
+  {name:'── 南美洲 ──',tz:null,disabled:true},
+  {name:'哥倫比亞 波哥大',tz:'America/Bogota'},
+  {name:'秘魯 利馬',tz:'America/Lima'},
+  {name:'厄瓜多 基多',tz:'America/Guayaquil'},
+  {name:'委內瑞拉 卡拉卡斯',tz:'America/Caracas'},
+  {name:'玻利維亞 拉巴斯',tz:'America/La_Paz'},
+  {name:'智利 聖地牙哥',tz:'America/Santiago'},
+  {name:'阿根廷 布宜諾斯艾利斯',tz:'America/Argentina/Buenos_Aires'},
+  {name:'巴西 聖保羅',tz:'America/Sao_Paulo'},
+  {name:'巴西 馬瑙斯',tz:'America/Manaus'},
+  {name:'烏拉圭 蒙特維多',tz:'America/Montevideo'},
+  {name:'巴拉圭 亞松森',tz:'America/Asuncion'},
   {name:'── 歐洲 ──',tz:null,disabled:true},
   {name:'西班牙 馬德里',tz:'Europe/Madrid'},
 ];
@@ -314,7 +315,7 @@ function getTZLabel(tz){
   return 'GMT'+sign+Math.floor(a/60)+(a%60?':'+String(a%60).padStart(2,'0'):'');
 }
 
-// ── 核心時區轉換函數（台灣時間 di, h 轉為對照時區 otDi, otH） ──
+// ── 核心時區轉換函數（精確度 100%，跨日跨週完美保留） ──
 function twToOt(di, h){
   const twTotalMin = di * 1440 + h * 60;
   const otTotalMin = twTotalMin + diffMin;
@@ -324,7 +325,7 @@ function twToOt(di, h){
   return {di: otDi, h: otH};
 }
 
-// ── 建立對照時區的課程資料結構映射 ──
+// ── 解放 7-22 限制的全面映射表 ──
 function buildOTMap(){
   const otMap={};
   for(let di=0;di<7;di++) otMap[di]={};
@@ -332,16 +333,13 @@ function buildOTMap(){
     if(entry && entry.name){
       const[h,di]=key.split('_').map(Number);
       const{di:otDi,h:otH}=twToOt(di,h);
-      if(otH>=7 && otH<22){
-        if(!otMap[otDi][otH]) otMap[otDi][otH]=[];
-        otMap[otDi][otH].push(entry);
-      }
+      if(!otMap[otDi][otH]) otMap[otDi][otH]=[];
+      otMap[otDi][otH].push(entry);
     }
   });
   return otMap;
 }
 
-// ── 建立對照時區的忙碌狀態映射（供空檔功能使用） ──
 function buildOTBusyMap(){
   const busyMap={};
   for(let di=0;di<7;di++) busyMap[di]={};
@@ -350,7 +348,7 @@ function buildOTBusyMap(){
     if(entry && entry.name){
       const[h,di]=key.split('_').map(Number);
       const{di:otDi,h:otH}=twToOt(di,h);
-      if(otH>=7 && otH<22) busyMap[otDi][otH]=true;
+      busyMap[otDi][otH]=true;
     }
   });
   return busyMap;
@@ -395,7 +393,6 @@ function renderSched(){
   renderLegend();renderIncomeTable();renderDayGrid();renderSummary();
 }
 
-// ── 台灣課表渲染（支援點擊編輯/新增） ──
 function renderTWBody(tid){
   const tbody=document.getElementById(tid);tbody.innerHTML='';
   HOURS.forEach(h=>{
@@ -415,16 +412,24 @@ function renderTWBody(tid){
   });
 }
 
-// ── 對照時區課表渲染（自動依據時區換算重組） ──
+// ── 進化版方案 B：右側時間軸與列，精準對位平行顯示 ──
 function renderOTBody(tid){
   const tbody=document.getElementById(tid);tbody.innerHTML='';
   const otMap=buildOTMap();
   HOURS.forEach(h=>{
     const tr=document.createElement('tr');
-    const td=document.createElement('td');td.className='time-col';td.textContent=fmtRange(h,diffMin);tr.appendChild(td);
+    const td=document.createElement('td');td.className='time-col';
+    td.textContent=fmtRange(h,diffMin); // 動態跟隨換算時間軸
+    tr.appendChild(td);
+    
+    // 計算出目前這一橫列，對應到對照時區真正的「小時數」
+    const currentOtH = ((h * 60 + diffMin) % 1440 + 1440) % 1440 / 60;
+    
     DAYS.forEach((_,otDi)=>{
       const cell=document.createElement('td');cell.className='cell mirror';
-      const entries=otMap[otDi]&&otMap[otDi][h]?otMap[otDi][h]:[];
+      
+      // 直接從全面映射表中，精準抓出在該星期的這個小時該上的課
+      const entries=otMap[otDi]&&otMap[otDi][currentOtH]?otMap[otDi][currentOtH]:[];
       if(entries.length>0){
         const entry=entries[0];
         const c=COLORS[entry.color]||COLORS.blue;
@@ -436,7 +441,6 @@ function renderOTBody(tid){
   });
 }
 
-// ── 台灣空檔渲染 ──
 function renderFreeTWBody(tid){
   const tbody=document.getElementById(tid);tbody.innerHTML='';
   HOURS.forEach(h=>{
@@ -451,16 +455,21 @@ function renderFreeTWBody(tid){
   });
 }
 
-// ── 對照時區空檔渲染（空檔也根據時區精確換位） ──
+// ── 進化版方案 B：右側空檔同步平行精準化 ──
 function renderFreeOTBody(tid){
   const tbody=document.getElementById(tid);tbody.innerHTML='';
   const busyMap=buildOTBusyMap();
   HOURS.forEach(h=>{
     const tr=document.createElement('tr');
-    const td=document.createElement('td');td.className='time-col';td.textContent=fmtRange(h,diffMin);tr.appendChild(td);
+    const td=document.createElement('td');td.className='time-col';
+    td.textContent=fmtRange(h,diffMin);
+    tr.appendChild(td);
+    
+    const currentOtH = ((h * 60 + diffMin) % 1440 + 1440) % 1440 / 60;
+    
     DAYS.forEach((_,otDi)=>{
       const cell=document.createElement('td');cell.className='cell free-cell';
-      const busy=busyMap[otDi] && busyMap[otDi][h];
+      const busy=busyMap[otDi] && busyMap[otDi][currentOtH];
       cell.innerHTML=busy?'<div class="free-busy"></div>':'<div class="free-libre">Libre</div>';
       tr.appendChild(cell);
     });
@@ -513,7 +522,6 @@ function renderSummary(){
     <div class="card"><div class="card-label">授課天數</div><div class="card-value">${activeDays} 天</div><div class="card-sub">每週上課日</div></div>`;
 }
 
-// ── 圖片導出功能（空檔匯出也跟隨新映射邏輯，保證導出圖片完全正確） ──
 function exportFreeImage(side){
   const isTW=(side==='tw');const shift=isTW?0:diffMin;const lbl=isTW?'GMT+8':getTZLabel(currentTZ.tz);
   const title=isTW?'空檔時間（台灣時間 GMT+8）':'空檔時間（'+currentTZ.name+' '+lbl+'）';
@@ -528,9 +536,12 @@ function exportFreeImage(side){
   
   HOURS.forEach(h=>{
     const tr=document.createElement('tr');const td=document.createElement('td');td.className='tc';td.textContent=fmtRange(h,shift);tr.appendChild(td);
+    
+    const currentOtH = ((h * 60 + shift) % 1440 + 1440) % 1440 / 60;
+    
     DAYS.forEach((_,di)=>{
       const cell=document.createElement('td');cell.className='ec';
-      const busy=isTW?isBusy(h,di):(busyMap[di] && busyMap[di][h]);
+      const busy=isTW?isBusy(h,di):(busyMap[di] && busyMap[di][currentOtH]);
       cell.innerHTML=busy?'<div class="export-busy"></div>':'<div class="export-libre">Libre</div>';
       tr.appendChild(cell);
     });
