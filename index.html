@@ -21,7 +21,7 @@ button.export-btn{background:#E6F1FB;color:#0C447C;border-color:#B5D4F4}
 .save-status.saved{color:#27500A}
 .save-status.saving{color:#e67e22}
 .tz-bar{display:flex;align-items:center;gap:8px;margin-bottom:14px;padding:8px 12px;background:#f8f8f8;border-radius:8px;border:1px solid #eee;flex-wrap:wrap}
-.tz-bar label{font-size:12px;color:#666}
+.tz-bar label{font-size:12px;color:#666;white-space:nowrap}
 .tz-bar select{font-size:13px;padding:4px 8px;border-radius:6px;border:1px solid #ccc;background:#fff;color:#222}
 .diff-badge{font-size:12px;color:#666}
 .diff-badge b{font-weight:500;color:#222}
@@ -34,7 +34,7 @@ button.export-btn{background:#E6F1FB;color:#0C447C;border-color:#B5D4F4}
 .panel-header.free-tw{background:#FEF3E2;color:#7A4500;border-color:#F5C87A}
 .panel-header.free-ot{background:#F0F4FF;color:#1A3A8F;border-color:#A8BEF5}
 
-/* 電腦版：左右並排 */
+/* 電腦版外觀：左右並排 */
 .dual{display:grid;grid-template-columns:minmax(0,1fr) 22px minmax(0,1fr);gap:0;align-items:start}
 .arrow-col{display:flex;flex-direction:column;align-items:center;padding-top:27px}
 .arrow-row{height:44px;display:flex;align-items:center;justify-content:center;color:#bbb;font-size:11px}
@@ -45,7 +45,7 @@ table.sched th{font-size:10px;font-weight:500;color:#555;padding:4px 2px;border:
 table.sched td.time-col{font-size:9px;padding:2px 3px;border:1px solid #ddd;text-align:center;white-space:nowrap;background:#f5f5f5;width:60px;height:44px;vertical-align:middle;color:#666}
 table.sched td.cell{border:1px solid #ddd;padding:2px;vertical-align:middle;height:44px;cursor:pointer;background:#fff;transition:background 0.1s}
 table.sched td.cell:hover{background:#f9f9f9}
-table.sched td.cell.mirror,table.sched td.cell.free-cell{cursor:default}
+table.sched td.cell.mirror, table.sched td.cell.free-cell{cursor:default}
 table.sched td.cell.mirror:hover{background:#fff}
 .chip{border-radius:4px;padding:2px 4px;height:100%;display:flex;align-items:center;justify-content:center;flex-direction:column;gap:1px;position:relative;overflow:hidden}
 .chip .name{font-size:9px;font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;text-align:center;width:100%}
@@ -70,7 +70,13 @@ table.income tfoot td{font-weight:500;background:#f8f8f8}
 .rate-input:focus{outline:none;border-color:#4a90d9;box-shadow:0 0 0 2px rgba(74,144,217,0.15)}
 .sdot{width:10px;height:10px;border-radius:2px;display:inline-block}
 .cards{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:10px;margin-top:8px}
-
+.card{background:#f8f8f8;border-radius:8px;padding:12px 14px}
+.card.highlight{background:#FEF3E2;border:1px solid #F5C87A}
+.card-label{font-size:11px;color:#666;margin-bottom:4px}
+.card.highlight .card-label{color:#7A4500}
+.card-value{font-size:17px;font-weight:500;color:#222;line-height:1.2}
+.card.highlight .card-value{color:#7A4500}
+.card-sub{font-size:11px;color:#aaa;margin-top:2px}
 .day-grid{display:grid;grid-template-columns:repeat(7,minmax(0,1fr));gap:6px;margin-top:8px}
 .day-card{background:#f8f8f8;border-radius:8px;padding:8px 6px;text-align:center}
 .day-name{font-size:10px;color:#888;margin-bottom:3px}
@@ -94,95 +100,91 @@ table.income tfoot td{font-weight:500;background:#f8f8f8}
 .export-libre{background:#FDE68A;height:100%;display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:700;color:#111;border-radius:3px}
 .export-busy{background:#1a1a1a;height:100%;border-radius:3px}
 
-/* 手機版響應式修正 (寬度 768px 以下生效) */
+/* 手機版適應性 RWD 排版修正 */
 @media(max-width:768px){
   .dual {
-    grid-template-columns: 1fr; /* 改成單欄上下堆疊 */
+    grid-template-columns: 1fr;
     gap: 15px;
   }
   .arrow-col {
-    display: none; /* 手機版隱藏中間的箭頭 */
+    display: none;
   }
   .cards{
     grid-template-columns: repeat(2,1fr);
   }
-  /* 讓課表在寬度不夠時可以左右滑動，不被壓縮 */
   table.sched {
-    table-layout: auto; 
-    min-width: 480px; 
+    table-layout: auto;
+    min-width: 480px;
   }
 }
 </style>
 </head>
 <body>
-<div class="top-bar">
-  <h1>華語課表</h1>
-  <span class="save-status" id="save-status">⏳ 正在連線雲端...</span>
-  <button class="danger" onclick="clearAll()">清空</button>
-</div>
-<div class="tz-bar">
-  <label>對照時區：</label>
-  <select id="tz-select" onchange="updateTZ()"></select>
-  <span class="diff-badge" id="diff-badge"></span>
-</div>
-
-<div class="sec">📅 課程安排</div>
-<div class="dual">
-  <div>
-    <div class="panel-header tw">台灣時間（GMT+8）</div>
-    <div class="tbl-wrap"><table class="sched"><thead id="tw-thead"></thead><tbody id="tw-tbody"></tbody></table></div>
+<div class="root">
+  <div class="top-bar">
+    <h1 style="font-size:14px;font-weight:500;display:inline-block">華語課表</h1>
+    <span class="save-status" id="save-status">⏳ 正在連線雲端...</span>
+    <button onclick="exportSchedule()">匯出分析 ↗</button>
+    <button class="danger" onclick="clearAll()">清空</button>
   </div>
-  <div class="arrow-col" id="sched-arrows"></div>
-  <div>
-    <div class="panel-header other" id="other-header">對照時區</div>
-    <div class="tbl-wrap"><table class="sched"><thead id="ot-thead"></thead><tbody id="ot-tbody"></tbody></table></div>
+  <div class="tz-bar">
+    <label>對照時區：</label>
+    <select id="tz-select" onchange="updateTZ()"></select>
+    <span class="diff-badge" id="diff-badge"></span>
   </div>
-</div>
-<div class="legend" id="legend"></div>
 
-<div class="sec" style="margin-top:22px">
-  🕓 空檔時間
-  <div class="sec-actions">
-    <button class="export-btn" onclick="exportFreeImage('tw')">匯出台灣時間 🖼</button>
-    <button class="export-btn" onclick="exportFreeImage('ot')">匯出對照時區 🖼</button>
+  <div class="sec">📅 課程安排</div>
+  <div class="dual">
+    <div>
+      <div class="panel-header tw">台灣時間（GMT+8）</div>
+      <div class="tbl-wrap"><table class="sched"><thead id="tw-thead"></thead><tbody id="tw-tbody"></tbody></table></div>
+    </div>
+    <div class="arrow-col" id="sched-arrows"></div>
+    <div>
+      <div class="panel-header other" id="other-header">對照時區</div>
+      <div class="tbl-wrap"><table class="sched"><thead id="ot-thead"></thead><tbody id="ot-tbody"></tbody></table></div>
+    </div>
   </div>
-</div>
-<div class="dual">
-  <div>
-    <div class="panel-header free-tw">台灣時間（GMT+8）</div>
-    <div class="tbl-wrap"><table class="sched"><thead id="free-tw-thead"></thead><tbody id="free-tw-tbody"></tbody></table></div>
+  <div class="legend" id="legend"></div>
+
+  <div class="sec" style="margin-top:22px">
+    🕓 空檔時間
+    <div class="sec-actions">
+      <button class="export-btn" onclick="exportFreeImage('tw')">匯出台灣時間 🖼</button>
+      <button class="export-btn" onclick="exportFreeImage('ot')">匯出對照時區 🖼</button>
+    </div>
   </div>
-  <div class="arrow-col" id="free-arrows"></div>
-  <div>
-    <div class="panel-header free-ot" id="free-other-header">對照時區</div>
-    <div class="tbl-wrap"><table class="sched"><thead id="free-ot-thead"></thead><tbody id="free-ot-tbody"></tbody></table></div>
+  <div class="dual">
+    <div>
+      <div class="panel-header free-tw">台灣時間（GMT+8）</div>
+      <div class="tbl-wrap"><table class="sched"><thead id="free-tw-thead"></thead><tbody id="free-tw-tbody"></tbody></table></div>
+    </div>
+    <div class="arrow-col" id="free-arrows"></div>
+    <div>
+      <div class="panel-header free-ot" id="free-other-header">對照時區</div>
+      <div class="tbl-wrap"><table class="sched"><thead id="free-ot-thead"></thead><tbody id="free-ot-tbody"></tbody></table></div>
+    </div>
   </div>
+
+  <div class="sec" style="margin-top:22px">💰 學生收費設定</div>
+  <div style="overflow-x: auto;">
+    <table class="income">
+      <thead><tr>
+        <th style="width:24px"></th><th>學生</th>
+        <th class="num">每堂收費（NT$）</th><th class="num">每週堂數</th>
+        <th class="num">每週收入</th><th class="num">每月預估</th>
+      </tr></thead>
+      <tbody id="rate-body"></tbody>
+      <tfoot id="rate-foot"></tfoot>
+    </table>
+  </div>
+  <p class="note">每月預估 = 每週收入 × 4 週</p>
+
+  <div class="sec" style="margin-top:22px">📆 每日收入</div>
+  <div class="day-grid" id="day-grid"></div>
+  <div class="sec" style="margin-top:22px">📊 收入總覽</div>
+  <div class="cards" id="summary-cards"></div>
 </div>
-
-<div class="sec" style="margin-top:22px">💰 學生收費設定</div>
-<div style="overflow-x: auto;">
-  <table class="income">
-    <thead>
-      <tr>
-        <th style="width:24px"></th>
-        <th>學生</th>
-        <th class="num">每堂收費（NT$）</th>
-        <th class="num">每週堂數</th>
-        <th class="num">每週收入</th>
-        <th class="num">每月預估</th>
-      </tr>
-    </thead>
-    <tbody id="rate-body"></tbody>
-    <tfoot id="rate-foot"></tfoot>
-  </table>
-</div>
-<p class="note">每月預估 = 每週收入 × 4 週</p>
-
-<div class="sec" style="margin-top:22px">📆 每日收入</div>
-<div class="day-grid" id="day-grid"></div>
-
-<div class="sec" style="margin-top:22px">📊 收入總覽</div>
-<div class="cards" id="summary-cards"></div>
 <div id="modal-mount"></div>
 
 <script>
@@ -203,9 +205,10 @@ const docRef = db.collection("appData").doc("scheduleMain");
 const DAYS=['一','二','三','四','五','六','日'];
 const HOURS=[];for(let h=7;h<22;h++)HOURS.push(h);
 const MONTHLY_MULT=4;
+
 const TZ_LIST=[
   {name:'── 北美洲 ──',tz:null,disabled:true},
-  {name:'美國 紐約（東部）',tz:'America/New_York'},
+  {name:'墨西哥 墨西哥城',tz:'America/Mexico_City'},
   {name:'美國 芝加哥（中部）',tz:'America/Chicago'},
   {name:'美國 丹佛（山地）',tz:'America/Denver'},
   {name:'美國 洛杉磯（西部）',tz:'America/Los_Angeles'},
@@ -215,7 +218,7 @@ const TZ_LIST=[
   {name:'加拿大 多倫多',tz:'America/Toronto'},
   {name:'加拿大 溫哥華',tz:'America/Vancouver'},
   {name:'加拿大 溫尼伯',tz:'America/Winnipeg'},
-  {name:'Mexico 墨西哥城',tz:'America/Mexico_City'},
+  {name:'美國 紐約（東部）',tz:'America/New_York'},
   {name:'── 中美洲／加勒比海 ──',tz:null,disabled:true},
   {name:'瓜地馬拉',tz:'America/Guatemala'},
   {name:'哥斯大黎加',tz:'America/Costa_Rica'},
@@ -237,6 +240,7 @@ const TZ_LIST=[
   {name:'── 歐洲 ──',tz:null,disabled:true},
   {name:'西班牙 馬德里',tz:'Europe/Madrid'},
 ];
+
 const COLORS={
   blue:{bg:'#E6F1FB',text:'#0C447C'},teal:{bg:'#E1F5EE',text:'#085041'},
   purple:{bg:'#EEEDFE',text:'#3C3489'},coral:{bg:'#FAECE7',text:'#712B13'},
@@ -244,7 +248,13 @@ const COLORS={
   pink:{bg:'#FBEAF0',text:'#72243E'},
 };
 const COLOR_KEYS=Object.keys(COLORS);
-let schedule={},rates={},currentTZ=null,diffMin=0,currentCell=null,saveTimer=null;
+
+let schedule={};
+let rates={};
+let currentTZ=null;
+let diffMin=0;
+let currentCell=null;
+let saveTimer=null;
 
 function saveData(){
   setSaveStatus('saving');
@@ -290,15 +300,28 @@ function getOffsetDiff(tz){
     const tw=base.toLocaleString('en-US',{timeZone:'Asia/Taipei',hour:'2-digit',minute:'2-digit',hour12:false});
     const ot=base.toLocaleString('en-US',{timeZone:tz,hour:'2-digit',minute:'2-digit',hour12:false});
     const[twH,twM]=tw.split(':').map(Number);const[otH,otM]=ot.split(':').map(Number);
-    let d=(otH*60+otM)-(twH*60+twM);if(d<-720)d+=1440;if(d>720)d-=1440;return d;
+    let d=(otH*60+otM)-(twH*60+twM);
+    if(d<-720)d+=1440;if(d>720)d-=1440;
+    return d;
   }catch(e){return 0;}
 }
 function getTZLabel(tz){
   const diff=getOffsetDiff(tz);const utc=8*60+diff;const sign=utc>=0?'+':'-';const a=Math.abs(utc);
   return 'GMT'+sign+Math.floor(a/60)+(a%60?':'+String(a%60).padStart(2,'0'):'');
 }
+
+function twToOt(di, h){
+  const twTotalMin = di * 1440 + h * 60;
+  const otTotalMin = twTotalMin + diffMin;
+  let otDi = Math.floor(((otTotalMin % 10080) + 10080) % 10080 / 1440);
+  const otMinInDay = ((otTotalMin % 1440) + 1440) % 1440;
+  const otH = Math.floor(otMinInDay / 60);
+  return {di: otDi, h: otH};
+}
+
 function fmtHM(m){const mm=((m%1440)+1440)%1440;return String(Math.floor(mm/60)).padStart(2,'0')+':'+String(mm%60).padStart(2,'0');}
-function fmtRange(h,shift){return fmtHM(h*60+shift)+'–'+fmtHM(h*60+shift+60);}
+function fmtRangeTW(h){return fmtHM(h*60)+'–'+fmtHM(h*60+60);}
+function fmtRangeOT(otH){return fmtHM(otH*60)+'–'+fmtHM(otH*60+60);}
 function fmtDiff(d){const s=d>=0?'+':'-';const a=Math.abs(d);return s+Math.floor(a/60)+(a%60?':'+String(a%60).padStart(2,'0'):'')+'h';}
 function cellKey(h,di){return h+'_'+di;}
 function isBusy(h,di){return !!schedule[cellKey(h,di)];}
@@ -308,94 +331,214 @@ function getStudents(){
 }
 function sessionCount(name){return Object.values(schedule).filter(e=>e && e.name===name).length;}
 function incomePerDay(di){let t=0;HOURS.forEach(h=>{const e=schedule[cellKey(h,di)];if(e && e.name)t+=(rates[e.name]||0);});return t;}
+
 function buildTZSelect(){
   const sel=document.getElementById('tz-select');let first=-1;
-  TZ_LIST.forEach((t,i)=>{const o=document.createElement('option');o.value=i;o.textContent=t.name;if(t.disabled)o.disabled=true;else if(first<0)first=i;sel.appendChild(o);});
+  TZ_LIST.forEach((t,i)=>{
+    const o=document.createElement('option');o.value=i;o.textContent=t.name;
+    if(t.disabled)o.disabled=true;else if(first<0)first=i;
+    sel.appendChild(o);
+  });
   sel.value=first;currentTZ=TZ_LIST[first];
 }
+
 function updateTZ(){
-  const idx=parseInt(document.getElementById('tz-select').value);currentTZ=TZ_LIST[idx];diffMin=getOffsetDiff(currentTZ.tz);
+  const idx=parseInt(document.getElementById('tz-select').value);
+  currentTZ=TZ_LIST[idx];diffMin=getOffsetDiff(currentTZ.tz);
   const lbl=getTZLabel(currentTZ.tz);
   document.getElementById('diff-badge').innerHTML='台灣時間 <b>'+fmtDiff(diffMin)+'</b> = <b>'+currentTZ.name+'</b>';
   document.getElementById('other-header').textContent=currentTZ.name+'（'+lbl+'）';
   document.getElementById('free-other-header').textContent=currentTZ.name+'（'+lbl+'）';
   renderSched();
 }
-function renderHead(tid){document.getElementById(tid).innerHTML='<tr><th style="width:60px">時間</th>'+DAYS.map(d=>'<th>'+d+'</th>').join('')+'</tr>';}
+
+function renderHead(tid){
+  document.getElementById(tid).innerHTML=
+    '<tr><th style="width:60px">時間</th>'+DAYS.map(d=>'<th>'+d+'</th>').join('')+'</tr>';
+}
+
 function renderSched(){
   ['tw-thead','ot-thead','free-tw-thead','free-ot-thead'].forEach(renderHead);
-  renderSchedBody('tw-tbody',true);renderSchedBody('ot-tbody',false);
-  renderFreeBody('free-tw-tbody',true);renderFreeBody('free-ot-tbody',false);
-  renderArrows('sched-arrows');renderArrows('free-arrows');
+  renderTWBody('tw-tbody');
+  renderOTBody('ot-tbody');
+  renderFreeTWBody('free-tw-tbody');
+  renderFreeOTBody('free-ot-tbody');
+  renderArrows('sched-arrows');
+  renderArrows('free-arrows');
   renderLegend();renderIncomeTable();renderDayGrid();renderSummary();
 }
-function renderSchedBody(tid,isTW){
-  const tbody=document.getElementById(tid);tbody.innerHTML='';const shift=isTW?0:diffMin;
+
+function renderTWBody(tid){
+  const tbody=document.getElementById(tid);tbody.innerHTML='';
   HOURS.forEach(h=>{
     const tr=document.createElement('tr');
-    const td=document.createElement('td');td.className='time-col';td.textContent=fmtRange(h,shift);tr.appendChild(td);
+    const td=document.createElement('td');td.className='time-col';td.textContent=fmtRangeTW(h);tr.appendChild(td);
     DAYS.forEach((_,di)=>{
-      const cell=document.createElement('td');const key=cellKey(h,di);const entry=schedule[key];
-      if(isTW){
-        cell.className='cell';
-        if(entry && entry.name){const c=COLORS[entry.color]||COLORS.blue;const rv=rates[entry.name]||0;
-          cell.innerHTML=`<div class="chip" style="background:${c.bg};color:${c.text}"><span class="name">${entry.name}</span>${rv>0?'<span class="rate-tag">NT$'+rv.toLocaleString()+'</span>':''}<button class="del" onclick="deleteEntry(event,'${key}')">✕</button></div>`;
-        }else{cell.innerHTML='<div class="plus">+</div>';}
-        cell.onclick = () => openModal(h,di,key);
-      }else{
-        cell.className='cell mirror';
-        if(entry && entry.name){const c=COLORS[entry.color]||COLORS.blue;cell.innerHTML=`<div class="chip mirror-chip" style="background:${c.bg};color:${c.text}"><span class="name">${entry.name}</span></div>`;}
+      const cell=document.createElement('td');cell.className='cell';
+      const key=cellKey(h,di);const entry=schedule[key];
+      if(entry && entry.name){
+        const c=COLORS[entry.color]||COLORS.blue;const rv=rates[entry.name]||0;
+        cell.innerHTML=`<div class="chip" style="background:${c.bg};color:${c.text}">
+          <span class="name">${entry.name}</span>
+          ${rv>0?'<span class="rate-tag">NT$'+rv.toLocaleString()+'</span>':''}
+          <button class="del" onclick="deleteEntry(event,'${key}')">✕</button>
+        </div>`;
+      }else{cell.innerHTML='<div class="plus">+</div>';}
+      cell.onclick = () => openModal(h,di,key);
+      tr.appendChild(cell);
+    });
+    tbody.appendChild(tr);
+  });
+}
+
+function buildOTMap(){
+  const otMap={};
+  for(let di=0;di<7;di++) otMap[di]={};
+  Object.entries(schedule).forEach(([key,entry])=>{
+    if(entry && entry.name){
+      const[h,di]=key.split('_').map(Number);
+      const{di:otDi,h:otH}=twToOt(di,h);
+      if(otH>=7&&otH<22){
+        if(!otMap[otDi][otH]) otMap[otDi][otH]=[];
+        otMap[otDi][otH].push(entry);
+      }
+    }
+  });
+  return otMap;
+}
+
+function renderOTBody(tid){
+  const tbody=document.getElementById(tid);tbody.innerHTML='';
+  const otMap=buildOTMap();
+  HOURS.forEach(h=>{
+    const tr=document.createElement('tr');
+    const td=document.createElement('td');td.className='time-col';td.textContent=fmtRangeOT(h);tr.appendChild(td);
+    DAYS.forEach((_,otDi)=>{
+      const cell=document.createElement('td');cell.className='cell mirror';
+      const entries=otMap[otDi]&&otMap[otDi][h]?otMap[otDi][h]:[];
+      if(entries.length>0){
+        const entry=entries[0];
+        const c=COLORS[entry.color]||COLORS.blue;
+        cell.innerHTML=`<div class="chip mirror-chip" style="background:${c.bg};color:${c.text}">
+          <span class="name">${entry.name}</span>
+        </div>`;
       }
       tr.appendChild(cell);
     });
     tbody.appendChild(tr);
   });
 }
-function renderFreeBody(tid,isTW){
-  const tbody=document.getElementById(tid);tbody.innerHTML='';const shift=isTW?0:diffMin;
+
+function renderFreeTWBody(tid){
+  const tbody=document.getElementById(tid);tbody.innerHTML='';
   HOURS.forEach(h=>{
-    const tr=document.createElement('tr');const td=document.createElement('td');td.className='time-col';td.textContent=fmtRange(h,shift);tr.appendChild(td);
-    DAYS.forEach((_,di)=>{const cell=document.createElement('td');cell.className='cell free-cell';cell.innerHTML=isBusy(h,di)?'<div class="free-busy"></div>':'<div class="free-libre">Libre</div>';tr.appendChild(cell);});
+    const tr=document.createElement('tr');
+    const td=document.createElement('td');td.className='time-col';td.textContent=fmtRangeTW(h);tr.appendChild(td);
+    DAYS.forEach((_,di)=>{
+      const cell=document.createElement('td');cell.className='cell free-cell';
+      cell.innerHTML=isBusy(h,di)?'<div class="free-busy"></div>':'<div class="free-libre">Libre</div>';
+      tr.appendChild(cell);
+    });
     tbody.appendChild(tr);
   });
 }
-function renderArrows(id){const col=document.getElementById(id);col.innerHTML='';HOURS.forEach(()=>{const r=document.createElement('div');r.className='arrow-row';r.textContent='→';col.appendChild(r);});}
+
+function buildOTBusyMap(){
+  const busyMap={};
+  for(let di=0;di<7;di++) busyMap[di]={};
+  Object.keys(schedule).forEach(key=>{
+    if(schedule[key] && schedule[key].name){
+      const[h,di]=key.split('_').map(Number);
+      const{di:otDi,h:otH}=twToOt(di,h);
+      if(otH>=7&&otH<22) busyMap[otDi][otH]=true;
+    }
+  });
+  return busyMap;
+}
+
+function renderFreeOTBody(tid){
+  const tbody=document.getElementById(tid);tbody.innerHTML='';
+  const busyMap=buildOTBusyMap();
+  HOURS.forEach(h=>{
+    const tr=document.createElement('tr');
+    const td=document.createElement('td');td.className='time-col';td.textContent=fmtRangeOT(h);tr.appendChild(td);
+    DAYS.forEach((_,otDi)=>{
+      const cell=document.createElement('td');cell.className='cell free-cell';
+      const busy=busyMap[otDi]&&busyMap[otDi][h];
+      cell.innerHTML=busy?'<div class="free-busy"></div>':'<div class="free-libre">Libre</div>';
+      tr.appendChild(cell);
+    });
+    tbody.appendChild(tr);
+  });
+}
+
+function renderArrows(id){
+  const col=document.getElementById(id);col.innerHTML='';
+  HOURS.forEach(()=>{const r=document.createElement('div');r.className='arrow-row';r.textContent='→';col.appendChild(r);});
+}
+
 function renderLegend(){
   const students=getStudents();const leg=document.getElementById('legend');leg.innerHTML='';
-  Object.entries(students).forEach(([n,c])=>{const col=COLORS[c]||COLORS.blue;leg.innerHTML+=`<div class="leg-item"><div class="leg-dot" style="background:${col.bg};border:1px solid ${col.text}50"></div>${n}</div>`;});
+  Object.entries(students).forEach(([n,c])=>{
+    const col=COLORS[c]||COLORS.blue;
+    leg.innerHTML+=`<div class="leg-item"><div class="leg-dot" style="background:${col.bg};border:1px solid ${col.text}50"></div>${n}</div>`;
+  });
 }
-function commitRate(name,val){rates[name]=parseInt(val)||0;renderSchedBody('tw-tbody',true);renderDayGrid();renderSummary();renderIncomeTable();scheduleSave();}
+
+function commitRate(name,val){
+  rates[name]=parseInt(val)||0;
+  renderTWBody('tw-tbody');renderDayGrid();renderSummary();renderIncomeTable();scheduleSave();
+}
+
 function renderIncomeTable(){
   const students=getStudents();
-  Object.keys(rates).forEach(n=>{if(!students[n])delete rates[n];});Object.keys(students).forEach(n=>{if(rates[n]==null)rates[n]=0;});
-  const tbody=document.getElementById('rate-body');const tfoot=document.getElementById('rate-foot');tbody.innerHTML='';let weeklyTotal=0;
+  Object.keys(rates).forEach(n=>{if(!students[n])delete rates[n];});
+  Object.keys(students).forEach(n=>{if(rates[n]==null)rates[n]=0;});
+  const tbody=document.getElementById('rate-body');const tfoot=document.getElementById('rate-foot');
+  tbody.innerHTML='';let weeklyTotal=0;
   Object.entries(students).forEach(([name,color])=>{
-    const c=COLORS[color]||COLORS.blue;const cnt=sessionCount(name);const rate=rates[name]||0;const weekly=cnt*rate;const monthly=weekly*MONTHLY_MULT;weeklyTotal+=weekly;
+    const c=COLORS[color]||COLORS.blue;const cnt=sessionCount(name);const rate=rates[name]||0;
+    const weekly=cnt*rate;const monthly=weekly*MONTHLY_MULT;weeklyTotal+=weekly;
     const tr=document.createElement('tr');
-    tr.innerHTML=`<td><span class="sdot" style="background:${c.bg};border:1px solid ${c.text}40"></span></td><td>${name}</td><td class="num"><input class="rate-input" type="number" min="0" step="100" value="${rate}" data-name="${name}"/></td><td class="num">${cnt}</td><td class="num">${weekly>0?'NT$ '+weekly.toLocaleString():'—'}</td><td class="num">${monthly>0?'NT$ '+monthly.toLocaleString():'—'}</td>`;
+    tr.innerHTML=`<td><span class="sdot" style="background:${c.bg};border:1px solid ${c.text}40"></span></td>
+      <td>${name}</td>
+      <td class="num"><input class="rate-input" type="number" min="0" step="100" value="${rate}" data-name="${name}"/></td>
+      <td class="num">${cnt}</td>
+      <td class="num">${weekly>0?'NT$ '+weekly.toLocaleString():'—'}</td>
+      <td class="num">${monthly>0?'NT$ '+monthly.toLocaleString():'—'}</td>`;
     tbody.appendChild(tr);
   });
-  const totalSessions=Object.keys(students).reduce((a,n)=>a+sessionCount(n),0);const monthlyTotal=weeklyTotal*MONTHLY_MULT;
-  tfoot.innerHTML=`<tr><td></td><td style="font-weight:500">合計</td><td></td><td class="num" style="font-weight:500">${totalSessions}</td><td class="num" style="font-weight:500">${weeklyTotal>0?'NT$ '+weeklyTotal.toLocaleString():'—'}</td><td class="num" style="font-weight:500">${monthlyTotal>0?'NT$ '+monthlyTotal.toLocaleString():'—'}</td></tr>`;
+  const totalSessions=Object.keys(students).reduce((a,n)=>a+sessionCount(n),0);
+  const monthlyTotal=weeklyTotal*MONTHLY_MULT;
+  tfoot.innerHTML=`<tr><td></td><td style="font-weight:500">合計</td><td></td>
+    <td class="num" style="font-weight:500">${totalSessions}</td>
+    <td class="num" style="font-weight:500">${weeklyTotal>0?'NT$ '+weeklyTotal.toLocaleString():'—'}</td>
+    <td class="num" style="font-weight:500">${monthlyTotal>0?'NT$ '+monthlyTotal.toLocaleString():'—'}</td></tr>`;
   document.querySelectorAll('.rate-input').forEach(inp=>{
     inp.onkeydown = e=>{if(e.key==='Enter'){e.preventDefault();inp.blur();commitRate(inp.dataset.name,inp.value);}};
     inp.onblur = ()=>{commitRate(inp.dataset.name,inp.value);};
   });
 }
+
 function renderDayGrid(){
   const grid=document.getElementById('day-grid');grid.innerHTML='';
   DAYS.forEach((_,di)=>{
     const income=incomePerDay(di);const hrs=HOURS.filter(h=>isBusy(h,di)).length;
     const div=document.createElement('div');div.className='day-card';
-    div.innerHTML=`<div class="day-name">週${DAYS[di]}</div><div class="day-val">${income>0?'NT$<br>'+income.toLocaleString():'—'}</div><div class="day-hrs">${hrs>0?hrs+'堂':''}</div>`;
+    div.innerHTML=`<div class="day-name">週${DAYS[di]}</div>
+      <div class="day-val">${income>0?'NT$<br>'+income.toLocaleString():'—'}</div>
+      <div class="day-hrs">${hrs>0?hrs+'堂':''}</div>`;
     grid.appendChild(div);
   });
 }
+
 function renderSummary(){
-  const students=getStudents();const weeklyTotal=Object.keys(students).reduce((s,n)=>s+sessionCount(n)*(rates[n]||0),0);
+  const students=getStudents();
+  const weeklyTotal=Object.keys(students).reduce((s,n)=>s+sessionCount(n)*(rates[n]||0),0);
   const monthlyTotal=weeklyTotal*MONTHLY_MULT;const monthly70=Math.round(monthlyTotal*0.7);
   const totalSessions=Object.keys(students).reduce((a,n)=>a+sessionCount(n),0);
-  const activeDays=DAYS.filter((_,di)=>HOURS.some(h=>isBusy(h,di))).length;const avg=totalSessions>0?Math.round(weeklyTotal/totalSessions):0;
+  const activeDays=DAYS.filter((_,di)=>HOURS.some(h=>isBusy(h,di))).length;
+  const avg=totalSessions>0?Math.round(weeklyTotal/totalSessions):0;
   document.getElementById('summary-cards').innerHTML=`
     <div class="card"><div class="card-label">每週總收入</div><div class="card-value">${weeklyTotal>0?'NT$ '+weeklyTotal.toLocaleString():'—'}</div><div class="card-sub">${totalSessions} 堂／週</div></div>
     <div class="card"><div class="card-label">每月預估收入</div><div class="card-value">${monthlyTotal>0?'NT$ '+monthlyTotal.toLocaleString():'—'}</div><div class="card-sub">× 4 週（100%）</div></div>
@@ -403,43 +546,77 @@ function renderSummary(){
     <div class="card"><div class="card-label">平均每堂收費</div><div class="card-value">${avg>0?'NT$ '+avg.toLocaleString():'—'}</div><div class="card-sub">全體平均</div></div>
     <div class="card"><div class="card-label">授課天數</div><div class="card-value">${activeDays} 天</div><div class="card-sub">每週上課日</div></div>`;
 }
+
 function exportFreeImage(side){
-  const isTW=(side==='tw');const shift=isTW?0:diffMin;const lbl=isTW?'GMT+8':getTZLabel(currentTZ.tz);
+  const isTW=(side==='tw');
+  const lbl=isTW?'GMT+8':getTZLabel(currentTZ.tz);
   const title=isTW?'空檔時間（台灣時間 GMT+8）':'空檔時間（'+currentTZ.name+' '+lbl+'）';
   const filename=isTW?'libre_taiwan.png':'libre_'+currentTZ.name.replace(/[^a-zA-Z0-9]/g,'_')+'.png';
-  const wrap=document.createElement('div');wrap.className='export-wrap';wrap.style.width='640px';
+  const busyMap=buildOTBusyMap();
+  const wrap=document.createElement('div');wrap.className='export-wrap';wrap.style.width='660px';
   const titleEl=document.createElement('div');titleEl.className='export-title';titleEl.textContent=title;wrap.appendChild(titleEl);
-  const table=document.createElement('table');const thead=document.createElement('thead');
-  thead.innerHTML='<tr><th style="width:80px">時間</th>'+DAYS.map(d=>'<th>'+d+'</th>').join('')+'</tr>';table.appendChild(thead);
+  const table=document.createElement('table');
+  const thead=document.createElement('thead');
+  thead.innerHTML='<tr><th style="width:80px">時間</th>'+DAYS.map(d=>'<th>'+d+'</th>').join('')+'</tr>';
+  table.appendChild(thead);
   const tbody=document.createElement('tbody');
   HOURS.forEach(h=>{
-    const tr=document.createElement('tr');const td=document.createElement('td');td.className='tc';td.textContent=fmtRange(h,shift);tr.appendChild(td);
-    DAYS.forEach((_,di)=>{const cell=document.createElement('td');cell.className='ec';cell.innerHTML=isBusy(h,di)?'<div class="export-busy"></div>':'<div class="export-libre">Libre</div>';tr.appendChild(cell);});
+    const tr=document.createElement('tr');
+    const timeStr=isTW?fmtRangeTW(h):fmtRangeOT(h);
+    const td=document.createElement('td');td.className='tc';td.textContent=timeStr;tr.appendChild(td);
+    DAYS.forEach((_,di)=>{
+      const cell=document.createElement('td');cell.className='ec';
+      const busy=isTW?isBusy(h,di):(busyMap[di]&&busyMap[di][h]);
+      cell.innerHTML=busy?'<div class="export-busy"></div>':'<div class="export-libre">Libre</div>';
+      tr.appendChild(cell);
+    });
     tbody.appendChild(tr);
   });
   table.appendChild(tbody);wrap.appendChild(table);document.body.appendChild(wrap);
   html2canvas(wrap,{scale:2,backgroundColor:'#ffffff',useCORS:true}).then(canvas=>{
-    document.body.removeChild(wrap);const link=document.createElement('a');link.download=filename;link.href=canvas.toDataURL('image/png');link.click();
+    document.body.removeChild(wrap);
+    const link=document.createElement('a');link.download=filename;link.href=canvas.toDataURL('image/png');link.click();
   }).catch(err=>{if(document.body.contains(wrap))document.body.removeChild(wrap);alert('匯出失敗：'+err.message);});
 }
+
 function openModal(h,di,key){
   currentCell={h,di,key};const e=schedule[key]||{};
   const opts=COLOR_KEYS.map(k=>`<option value="${k}"${(e.color||'blue')===k?' selected':''}>${k}</option>`).join('');
-  document.getElementById('modal-mount').innerHTML=`<div class="modal-overlay"><div class="modal"><h3>${e.name?'編輯學生':'新增學生'}</h3><label>學生姓名</label><input type="text" id="m-name" placeholder="請輸入姓名" value="${e.name||''}"/><label>顏色標記</label><select id="m-color">${opts}</select><div class="modal-btns"><button onclick="closeModal()">取消</button><button class="primary" onclick="saveEntry()">儲存</button></div></div></div>`;
+  document.getElementById('modal-mount').innerHTML=`<div class="modal-overlay"><div class="modal">
+    <h3>${e.name?'編輯學生':'新增學生'}</h3>
+    <label>學生姓名</label><input type="text" id="m-name" placeholder="請輸入姓名" value="${e.name||''}"/>
+    <label>顏色標記</label><select id="m-color">${opts}</select>
+    <div class="modal-btns"><button onclick="closeModal()">取消</button><button class="primary" onclick="saveEntry()">儲存</button></div>
+  </div></div>`;
   setTimeout(()=>document.getElementById('m-name').focus(),50);
 }
 function closeModal(){document.getElementById('modal-mount').innerHTML='';currentCell=null;}
 function saveEntry(){
-  if(!currentCell)return;const name=document.getElementById('m-name').value.trim();if(!name){alert('請輸入學生姓名');return;}
-  schedule[currentCell.key]={name,color:document.getElementById('m-color').value};closeModal();renderSched();scheduleSave();
+  if(!currentCell)return;
+  const name=document.getElementById('m-name').value.trim();if(!name){alert('請輸入學生姓名');return;}
+  schedule[currentCell.key]={name,color:document.getElementById('m-color').value};
+  closeModal();renderSched();scheduleSave();
 }
 function deleteEntry(e,key){e.stopPropagation();delete schedule[key];renderSched();scheduleSave();}
 function clearAll(){if(confirm('確定要清空整張課表嗎？')){schedule={};rates={};renderSched();scheduleSave();}}
+
+function exportSchedule(){
+  let lines=['華語課表（台灣 vs '+currentTZ.name+'）'];
+  DAYS.forEach((d,di)=>{
+    const items=[];
+    HOURS.forEach(h=>{
+      const e=schedule[cellKey(h,di)];
+      if(e && e.name){const{di:otDi,h:otH}=twToOt(di,h);items.push(fmtRangeTW(h)+' → '+DAYS[otDi]+' '+fmtRangeOT(otH)+' '+e.name);}
+    });
+    if(items.length)lines.push('週'+d+'：'+items.join('、'));
+  });
+  alert('課表分析文字已產生！如果你想與 AI 對話，可以複製以下內容貼給 AI：\n\n' + lines.join('\n'));
+}
 document.addEventListener('keydown',e=>{if(e.key==='Escape')closeModal();});
 
 buildTZSelect();
 updateTZ();
-listenCloudData();
+listenCloudData(); // 啟動雲端同步監聽
 </script>
 </body>
 </html>
