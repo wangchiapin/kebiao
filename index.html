@@ -319,15 +319,15 @@ function getTZLabel(tz){
   try{
     const now = new Date();
 
-    const parts = new Intl.DateTimeFormat('en-US', {
+    const str = now.toLocaleString('en-US', {
       timeZone: tz,
-      timeZoneName: 'shortOffset'
-    }).formatToParts(now);
+      timeZoneName: 'short'
+    });
 
-    const tzPart = parts.find(p => p.type === 'timeZoneName');
+    const match = str.match(/GMT([+-]\d+)/);
 
-    if(tzPart){
-      return tzPart.value.replace('UTC', 'GMT');
+    if(match){
+      return 'GMT' + match[1];
     }
 
     return 'GMT';
