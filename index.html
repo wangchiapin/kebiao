@@ -102,19 +102,18 @@ table.income tfoot td{font-weight:500;background:#f8f8f8}
 .export-libre{background:#FDE68A;height:100%;display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:700;color:#111;border-radius:3px}
 .export-busy{background:#1a1a1a;height:100%;border-radius:3px}
 
-/* 手機版響應式修正 (寬度 768px 以下生效) */
+/* 手機版響應式修正 */
 @media(max-width:768px){
   .dual {
-    grid-template-columns: 1fr; /* 改成單欄上下堆疊 */
+    grid-template-columns: 1fr;
     gap: 15px;
   }
   .arrow-col {
-    display: none; /* 手機版隱藏中間的箭頭 */
+    display: none;
   }
   .cards{
     grid-template-columns: repeat(2,1fr);
   }
-  /* 讓課表在寬度不夠時可以左右滑動，不被壓縮 */
   table.sched {
     table-layout: auto; 
     min-width: 480px; 
@@ -207,18 +206,14 @@ const firebaseConfig = {
 firebase.initializeApp(firebaseConfig);
 
 firebase.auth().signInAnonymously()
-  .then(() => {
-    console.log("匿名登入成功");
-  })
-  .catch((error) => {
-    console.error("匿名登入失敗:", error);
-  });
+  .then(() => { console.log("匿名登入成功"); })
+  .catch((error) => { console.error("匿名登入失敗:", error); });
 
 const db = firebase.firestore();
 const docRef = db.collection("appData").doc("scheduleMain");
 
 const DAYS=['一','二','三','四','五','六','日'];
-const HOURS=[];for(let h=7;h<22;h++)HOURS.push(h); // 依然維持精簡的 15 列
+const HOURS=[]; for(let h=7;h<22;h++) HOURS.push(h); // 嚴格鎖定 15 列版面
 const MONTHLY_MULT=4;
 const TZ_LIST=[
   {name:'── 北美洲 ──',tz:null,disabled:true},
@@ -243,7 +238,7 @@ const TZ_LIST=[
   {name:'哥倫比亞 波哥大',tz:'America/Bogota'},
   {name:'秘魯 利馬',tz:'America/Lima'},
   {name:'厄瓜多 基多',tz:'America/Guayaquil'},
-  {name:'委內瑞拉 卡拉卡斯',tz:'America/Caracas'},
+  {name:'委內內瑞拉 卡拉卡斯',tz:'America/Caracas'},
   {name:'玻利維亞 拉巴斯',tz:'America/La_Paz'},
   {name:'智利 聖地牙哥',tz:'America/Santiago'},
   {name:'阿根廷 布宜諾斯艾利斯',tz:'America/Argentina/Buenos_Aires'},
@@ -315,48 +310,20 @@ function getTZLabel(tz){
   return 'GMT'+sign+Math.floor(a/60)+(a%60?':'+String(a%60).padStart(2,'0'):'');
 }
 
-// ── 核心時區轉換函數（精確度 100%，跨日跨週完美保留） ──
-function twToOt(di, h){
-  const twTotalMin = di * 1440 + h * 60;
-  const otTotalMin = twTotalMin + diffMin;
-  let otDi = Math.floor(((otTotalMin % 10080) + 10080) % 10080 / 1440);
-  const otMinInDay = ((otTotalMin % 1440) + 1440) % 1440;
-  const otH = Math.floor(otMinInDay / 60);
-  return {di: otDi, h: otH};
-}
-
-// ── 解放 7-22 限制的全面映射表 ──
-function buildOTMap(){
-  const otMap={};
-  for(let di=0;di<7;di++) otMap[di]={};
-  Object.entries(schedule).forEach(([key,entry])=>{
-    if(entry && entry.name){
-      const[h,di]=key.split('_').map(Number);
-      const{di:otDi,h:otH}=twToOt(di,h);
-      if(!otMap[otDi][otH]) otMap[otDi][otH]=[];
-      otMap[otDi][otH].push(entry);
-    }
-  });
-  return otMap;
-}
-
-function buildOTBusyMap(){
-  const busyMap={};
-  for(let di=0;di<7;di++) busyMap[di]={};
-  Object.keys(schedule).forEach(key=>{
-    const entry = schedule[key];
-    if(entry && entry.name){
-      const[h,di]=key.split('_').map(Number);
-      const{di:otDi,h:otH}=twToOt(di,h);
-      busyMap[otDi][otH]=true;
-    }
-  });
-  return busyMap;
+// ── 核心：從「對照學生時區座標」反向推算出「台灣時間座標」 ──
+function otToTw(otDi, otH) {
+  const otTotalMin = otDi * 1440 + otH * 60;
+  const twTotalMin = otTotalMin - diffMin; // 反向減去時差
+  let twDi = Math.floor(((twTotalMin % 10080) + 10080) % 10080 / 1440);
+  const twMinInDay = ((twTotalMin % 1440) + 1440) % 1440;
+  const twH = Math.floor(twMinInDay / 60);
+  return { di: twDi, h: twH };
 }
 
 function fmtHM(m){const mm=((m%1440)+1440)%1440;return String(Math.floor(mm/60)).padStart(2,'0')+':'+String(mm%60).padStart(2,'0');}
 function fmtRange(h,shift){return fmtHM(h*60+shift)+'–'+fmtHM(h*60+shift+60);}
 function fmtDiff(d){const s=d>=0?'+':'-';const a=Math.abs(d);return s+Math.floor(a/60)+(a%60?':'+String(a%60).padStart(2,'0'):'')+'h';}
+// 這裡統一使用台灣時間的 h, di 生成存儲 Key
 function cellKey(h,di){return h+'_'+di;}
 function isBusy(h,di) {
   const entry = schedule[cellKey(h,di)];
@@ -368,11 +335,13 @@ function getStudents(){
 }
 function sessionCount(name){return Object.values(schedule).filter(e=>e && e.name===name).length;}
 function incomePerDay(di){let t=0;HOURS.forEach(h=>{const e=schedule[cellKey(h,di)];if(e && e.name)t+=(rates[e.name]||0);});return t;}
+
 function buildTZSelect(){
   const sel=document.getElementById('tz-select');let first=-1;
   TZ_LIST.forEach((t,i)=>{const o=document.createElement('option');o.value=i;o.textContent=t.name;if(t.disabled)o.disabled=true;else if(first<0)first=i;sel.appendChild(o);});
   sel.value=first;currentTZ=TZ_LIST[first];
 }
+
 function updateTZ(){
   const idx=parseInt(document.getElementById('tz-select').value);currentTZ=TZ_LIST[idx];diffMin=getOffsetDiff(currentTZ.tz);
   const lbl=getTZLabel(currentTZ.tz);
@@ -381,6 +350,7 @@ function updateTZ(){
   document.getElementById('free-other-header').textContent=currentTZ.name+'（'+lbl+'）';
   renderSched();
 }
+
 function renderHead(tid){document.getElementById(tid).innerHTML='<tr><th style="width:60px">時間</th>'+DAYS.map(d=>'<th>'+d+'</th>').join('')+'</tr>';}
 
 function renderSched(){
@@ -393,6 +363,7 @@ function renderSched(){
   renderLegend();renderIncomeTable();renderDayGrid();renderSummary();
 }
 
+// 台灣課表（左側）：主控台
 function renderTWBody(tid){
   const tbody=document.getElementById(tid);tbody.innerHTML='';
   HOURS.forEach(h=>{
@@ -412,26 +383,27 @@ function renderTWBody(tid){
   });
 }
 
-// ── 進化版方案 B：右側時間軸與列，精準對位平行顯示 ──
+// 對照時區課表（右側）：精準實現版面不拉長、星期完美轉換、課程絕不蒸發
 function renderOTBody(tid){
   const tbody=document.getElementById(tid);tbody.innerHTML='';
-  const otMap=buildOTMap();
   HOURS.forEach(h=>{
     const tr=document.createElement('tr');
     const td=document.createElement('td');td.className='time-col';
-    td.textContent=fmtRange(h,diffMin); // 動態跟隨換算時間軸
+    td.textContent=fmtRange(h,diffMin); // 右側時間軸自動平移作息
     tr.appendChild(td);
     
-    // 計算出目前這一橫列，對應到對照時區真正的「小時數」
+    // 計算右側此橫列代表的學生當地「整點數」
     const currentOtH = ((h * 60 + diffMin) % 1440 + 1440) % 1440 / 60;
     
-    DAYS.forEach((_,otDi)=>{
+    DAYS.forEach((_, otDi)=>{
       const cell=document.createElement('td');cell.className='cell mirror';
       
-      // 直接從全面映射表中，精準抓出在該星期的這個小時該上的課
-      const entries=otMap[otDi]&&otMap[otDi][currentOtH]?otMap[otDi][currentOtH]:[];
-      if(entries.length>0){
-        const entry=entries[0];
+      // 關鍵反向推算：這格學生時間（otDi, currentOtH）在台灣到底是星期幾、幾點？
+      const twCoord = otToTw(otDi, currentOtH);
+      const twKey = cellKey(twCoord.h, twCoord.di);
+      const entry = schedule[twKey];
+      
+      if(entry && entry.name){
         const c=COLORS[entry.color]||COLORS.blue;
         cell.innerHTML=`<div class="chip mirror-chip" style="background:${c.bg};color:${c.text}"><span class="name">${entry.name}</span></div>`;
       }
@@ -441,6 +413,7 @@ function renderOTBody(tid){
   });
 }
 
+// 台灣空檔（左側）
 function renderFreeTWBody(tid){
   const tbody=document.getElementById(tid);tbody.innerHTML='';
   HOURS.forEach(h=>{
@@ -455,21 +428,22 @@ function renderFreeTWBody(tid){
   });
 }
 
-// ── 進化版方案 B：右側空檔同步平行精準化 ──
+// 對照時區空檔（右側）：同步使用反向對位邏輯，Libre 匯出圖片給外國人看絕不出錯
 function renderFreeOTBody(tid){
   const tbody=document.getElementById(tid);tbody.innerHTML='';
-  const busyMap=buildOTBusyMap();
   HOURS.forEach(h=>{
     const tr=document.createElement('tr');
-    const td=document.createElement('td');td.className='time-col';
-    td.textContent=fmtRange(h,diffMin);
-    tr.appendChild(td);
+    const td=document.createElement('td');td.className='time-col';td.textContent=fmtRange(h,diffMin);tr.appendChild(td);
     
     const currentOtH = ((h * 60 + diffMin) % 1440 + 1440) % 1440 / 60;
     
-    DAYS.forEach((_,otDi)=>{
+    DAYS.forEach((_, otDi)=>{
       const cell=document.createElement('td');cell.className='cell free-cell';
-      const busy=busyMap[otDi] && busyMap[otDi][currentOtH];
+      
+      // 用同樣的反向邏輯，推算這格在台灣是不是忙碌
+      const twCoord = otToTw(otDi, currentOtH);
+      const busy = isBusy(twCoord.h, twCoord.di);
+      
       cell.innerHTML=busy?'<div class="free-busy"></div>':'<div class="free-libre">Libre</div>';
       tr.appendChild(cell);
     });
@@ -522,12 +496,12 @@ function renderSummary(){
     <div class="card"><div class="card-label">授課天數</div><div class="card-value">${activeDays} 天</div><div class="card-sub">每週上課日</div></div>`;
 }
 
+// 導出圖片功能：同樣融入反向對應邏輯，確保匯出給學生的圖片 100% 正確
 function exportFreeImage(side){
   const isTW=(side==='tw');const shift=isTW?0:diffMin;const lbl=isTW?'GMT+8':getTZLabel(currentTZ.tz);
   const title=isTW?'空檔時間（台灣時間 GMT+8）':'空檔時間（'+currentTZ.name+' '+lbl+'）';
   const filename=isTW?'libre_taiwan.png':'libre_'+currentTZ.name.replace(/[^a-zA-Z0-9]/g,'_')+'.png';
   
-  const busyMap=buildOTBusyMap();
   const wrap=document.createElement('div');wrap.className='export-wrap';wrap.style.width='640px';
   const titleEl=document.createElement('div');titleEl.className='export-title';titleEl.textContent=title;wrap.appendChild(titleEl);
   const table=document.createElement('table');const thead=document.createElement('thead');
@@ -539,9 +513,17 @@ function exportFreeImage(side){
     
     const currentOtH = ((h * 60 + shift) % 1440 + 1440) % 1440 / 60;
     
-    DAYS.forEach((_,di)=>{
+    DAYS.forEach((_, otDi)=>{
       const cell=document.createElement('td');cell.className='ec';
-      const busy=isTW?isBusy(h,di):(busyMap[di] && busyMap[di][currentOtH]);
+      
+      let busy = false;
+      if (isTW) {
+        busy = isBusy(h, otDi);
+      } else {
+        const twCoord = otToTw(otDi, currentOtH);
+        busy = isBusy(twCoord.h, twCoord.di);
+      }
+      
       cell.innerHTML=busy?'<div class="export-busy"></div>':'<div class="export-libre">Libre</div>';
       tr.appendChild(cell);
     });
