@@ -315,25 +315,13 @@ function getTZLabel(tz){
 }
 
 // ── 核心時區轉換函數（台灣時間 di, h 轉為對照時區 otDi, otH） ──
-function getTZLabel(tz){
-  try{
-    const now = new Date();
-
-    const str = now.toLocaleString('en-US', {
-      timeZone: tz,
-      timeZoneName: 'short'
-    });
-
-    const match = str.match(/GMT([+-]\d+)/);
-
-    if(match){
-      return 'GMT' + match[1];
-    }
-
-    return 'GMT';
-  }catch(e){
-    return 'GMT';
-  }
+function twToOt(di, h){
+  const twTotalMin = di * 1440 + h * 60;
+  const otTotalMin = twTotalMin + diffMin;
+  let otDi = Math.floor(((otTotalMin % 10080) + 10080) % 10080 / 1440);
+  const otMinInDay = ((otTotalMin % 1440) + 1440) % 1440;
+  const otH = Math.floor(otMinInDay / 60);
+  return {di: otDi, h: otH};
 }
 
 // ── 建立對照時區的課程資料結構映射 ──
