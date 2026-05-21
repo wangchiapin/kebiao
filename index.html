@@ -8,7 +8,6 @@
 <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-auth-compat.js"></script>
-
 <style>
 *{box-sizing:border-box;margin:0;padding:0}
 body{background:#fff;color:#222;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;font-size:12px;padding:12px}
@@ -18,6 +17,7 @@ button{font-size:12px;padding:5px 12px;border-radius:6px;border:1px solid #ccc;b
 button:hover{background:#f5f5f5}
 button.danger{color:#c0392b;border-color:#e0b0b0}
 button.export-btn{background:#E6F1FB;color:#0C447C;border-color:#B5D4F4}
+button.share-btn{background:#E1F5EE;color:#085041;border-color:#9FE1CB}
 .save-status{font-size:11px;color:#aaa;margin-left:4px}
 .save-status.saved{color:#27500A}
 .save-status.saving{color:#e67e22}
@@ -28,18 +28,15 @@ button.export-btn{background:#E6F1FB;color:#0C447C;border-color:#B5D4F4}
 .diff-badge b{font-weight:500;color:#222}
 .sec{font-size:13px;font-weight:500;color:#222;margin-bottom:6px;margin-top:20px;padding-bottom:4px;border-bottom:1px solid #eee;display:flex;align-items:center;gap:6px}
 .sec:first-of-type{margin-top:0}
-.sec-actions{margin-left:auto;display:flex;gap:6px}
+.sec-actions{margin-left:auto;display:flex;gap:6px;flex-wrap:wrap}
 .panel-header{font-size:12px;font-weight:500;text-align:center;padding:5px 4px;border:1px solid #ddd;border-bottom:none;border-radius:6px 6px 0 0}
 .panel-header.tw{background:#E6F1FB;color:#0C447C;border-color:#B5D4F4}
 .panel-header.other{background:#E1F5EE;color:#085041;border-color:#9FE1CB}
 .panel-header.free-tw{background:#FEF3E2;color:#7A4500;border-color:#F5C87A}
 .panel-header.free-ot{background:#F0F4FF;color:#1A3A8F;border-color:#A8BEF5}
-
-/* 電腦版：左右並排 */
 .dual{display:grid;grid-template-columns:minmax(0,1fr) 22px minmax(0,1fr);gap:0;align-items:start}
 .arrow-col{display:flex;flex-direction:column;align-items:center;padding-top:27px}
 .arrow-row{height:44px;display:flex;align-items:center;justify-content:center;color:#bbb;font-size:11px}
-
 .tbl-wrap{overflow-x:auto}
 table.sched{width:100%;border-collapse:collapse;table-layout:fixed}
 table.sched th{font-size:10px;font-weight:500;color:#555;padding:4px 2px;border:1px solid #ddd;text-align:center;background:#f5f5f5}
@@ -78,7 +75,6 @@ table.income tfoot td{font-weight:500;background:#f8f8f8}
 .card-value{font-size:18px;font-weight:500;color:#222;line-height:1.2}
 .card.highlight .card-value{color:#7A4500}
 .card-sub{font-size:11px;color:#aaa;margin-top:2px}
-
 .day-grid{display:grid;grid-template-columns:repeat(7,minmax(0,1fr));gap:6px;margin-top:8px}
 .day-card{background:#f8f8f8;border-radius:8px;padding:8px 6px;text-align:center}
 .day-name{font-size:10px;color:#888;margin-bottom:3px}
@@ -86,7 +82,7 @@ table.income tfoot td{font-weight:500;background:#f8f8f8}
 .day-hrs{font-size:10px;color:#aaa;margin-top:1px}
 .note{font-size:11px;color:#aaa;margin-top:6px}
 .modal-overlay{position:fixed;inset:0;background:rgba(0,0,0,0.35);display:flex;align-items:center;justify-content:center;z-index:99}
-.modal{background:#fff;border:1px solid #ddd;border-radius:12px;padding:1.25rem;width:260px;box-shadow:0 8px 32px rgba(0,0,0,0.15)}
+.modal{background:#fff;border:1px solid #ddd;border-radius:12px;padding:1.25rem;width:280px;box-shadow:0 8px 32px rgba(0,0,0,0.15)}
 .modal h3{font-size:14px;font-weight:600;margin-bottom:12px;color:#222}
 .modal label{font-size:11px;color:#666;display:block;margin-bottom:4px;margin-top:10px}
 .modal input,.modal select{width:100%;font-size:13px;padding:6px 9px;border-radius:6px;border:1px solid #ccc;background:#fff;color:#222}
@@ -101,24 +97,19 @@ table.income tfoot td{font-weight:500;background:#f8f8f8}
 .export-wrap td.ec{border:1px solid #ccc;padding:2px;height:36px;vertical-align:middle}
 .export-libre{background:#FDE68A;height:100%;display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:700;color:#111;border-radius:3px}
 .export-busy{background:#1a1a1a;height:100%;border-radius:3px}
-
-/* 手機版響應式修正 (寬度 768px 以下生效) */
+/* share link popup */
+.share-popup{position:fixed;inset:0;background:rgba(0,0,0,0.35);display:flex;align-items:center;justify-content:center;z-index:99}
+.share-box{background:#fff;border-radius:12px;padding:1.5rem;width:340px;box-shadow:0 8px 32px rgba(0,0,0,0.15)}
+.share-box h3{font-size:14px;font-weight:600;margin-bottom:8px}
+.share-box p{font-size:12px;color:#666;margin-bottom:12px;line-height:1.5}
+.share-url{width:100%;font-size:11px;padding:8px;border:1px solid #ccc;border-radius:6px;background:#f8f8f8;color:#222;word-break:break-all;margin-bottom:10px;min-height:48px;resize:none;font-family:monospace}
+.share-btns{display:flex;gap:8px}
+/* 手機版 */
 @media(max-width:768px){
-  .dual {
-    grid-template-columns: 1fr; /* 改成單欄上下堆疊 */
-    gap: 15px;
-  }
-  .arrow-col {
-    display: none; /* 手機版隱藏中間的箭頭 */
-  }
-  .cards{
-    grid-template-columns: repeat(2,1fr);
-  }
-  /* 讓課表在寬度不夠時可以左右滑動，不被壓縮 */
-  table.sched {
-    table-layout: auto; 
-    min-width: 480px; 
-  }
+  .dual{grid-template-columns:1fr;gap:15px}
+  .arrow-col{display:none}
+  .cards{grid-template-columns:repeat(2,1fr)}
+  table.sched{table-layout:auto;min-width:480px}
 }
 </style>
 </head>
@@ -153,6 +144,7 @@ table.income tfoot td{font-weight:500;background:#f8f8f8}
   <div class="sec-actions">
     <button class="export-btn" onclick="exportFreeImage('tw')">匯出台灣時間 🖼</button>
     <button class="export-btn" onclick="exportFreeImage('ot')">匯出對照時區 🖼</button>
+    <button class="share-btn" onclick="showShareLink()">分享空檔連結 🔗</button>
   </div>
 </div>
 <div class="dual">
@@ -168,18 +160,13 @@ table.income tfoot td{font-weight:500;background:#f8f8f8}
 </div>
 
 <div class="sec" style="margin-top:22px">💰 學生收費設定</div>
-<div style="overflow-x: auto;">
+<div style="overflow-x:auto">
   <table class="income">
-    <thead>
-      <tr>
-        <th style="width:24px"></th>
-        <th>學生</th>
-        <th class="num">每堂收費（NT$）</th>
-        <th class="num">每週堂數</th>
-        <th class="num">每週收入</th>
-        <th class="num">每月預估</th>
-      </tr>
-    </thead>
+    <thead><tr>
+      <th style="width:24px"></th><th>學生</th>
+      <th class="num">每堂收費（NT$）</th><th class="num">每週堂數</th>
+      <th class="num">每週收入</th><th class="num">每月預估</th>
+    </tr></thead>
     <tbody id="rate-body"></tbody>
     <tfoot id="rate-foot"></tfoot>
   </table>
@@ -188,41 +175,36 @@ table.income tfoot td{font-weight:500;background:#f8f8f8}
 
 <div class="sec" style="margin-top:22px">📆 每日收入</div>
 <div class="day-grid" id="day-grid"></div>
-
 <div class="sec" style="margin-top:22px">📊 收入總覽</div>
 <div class="cards" id="summary-cards"></div>
 <div id="modal-mount"></div>
 
 <script>
-// --- Firebase 初始化與配置 ---
-const firebaseConfig = {
-  apiKey: "AIzaSyD931NXk1WUR-No5RJRav4HPZ4rqQNfxj4",
-  authDomain: "huayu-schedule.firebaseapp.com",
-  projectId: "huayu-schedule",
-  storageBucket: "huayu-schedule.firebasestorage.app",
-  messagingSenderId: "921832358090",
-  appId: "1:921832358090:web:1194e7f49aca55907bb433"
+// ── Firebase ──
+const firebaseConfig={
+  apiKey:"AIzaSyD931NXk1WUR-No5RJRav4HPZ4rqQNfxj4",
+  authDomain:"huayu-schedule.firebaseapp.com",
+  projectId:"huayu-schedule",
+  storageBucket:"huayu-schedule.firebasestorage.app",
+  messagingSenderId:"921832358090",
+  appId:"1:921832358090:web:1194e7f49aca55907bb433"
 };
-
 firebase.initializeApp(firebaseConfig);
+firebase.auth().signInAnonymously().catch(e=>console.error(e));
+const db=firebase.firestore();
+const docRef=db.collection("appData").doc("scheduleMain");
 
-firebase.auth().signInAnonymously()
-  .then(() => {
-    console.log("匿名登入成功");
-  })
-  .catch((error) => {
-    console.error("匿名登入失敗:", error);
-  });
-
-const db = firebase.firestore();
-const docRef = db.collection("appData").doc("scheduleMain");
-
-const DAYS=['一','二','三','四','五','六','日'];
-const HOURS=[];for(let h=0;h<24;h++)HOURS.push(h);
+// ── 常數 ──
+const DAYS=['一','二','三','四','五','六','日']; // 0=週一 … 6=週日
+// 台灣課表：07:00–22:00
+const TW_HOURS=[];for(let h=7;h<22;h++)TW_HOURS.push(h);
+// 對照課表：顯示 15 格，以換算後時間為中心（00–23 全覆蓋用，渲染時過濾）
+const OT_HOURS=[];for(let h=0;h<24;h++)OT_HOURS.push(h);
 const MONTHLY_MULT=4;
+
 const TZ_LIST=[
   {name:'── 拉丁美洲 ──',tz:null,disabled:true},
-  {name:'Mexico 墨西哥城',tz:'America/Mexico_City'}, 
+  {name:'墨西哥 墨西哥城',tz:'America/Mexico_City'},
   {name:'秘魯 利馬',tz:'America/Lima'},
   {name:'智利 聖地牙哥',tz:'America/Santiago'},
   {name:'瓜地馬拉',tz:'America/Guatemala'},
@@ -253,6 +235,7 @@ const TZ_LIST=[
   {name:'── 歐洲 ──',tz:null,disabled:true},
   {name:'西班牙 馬德里',tz:'Europe/Madrid'},
 ];
+
 const COLORS={
   blue:{bg:'#E6F1FB',text:'#0C447C'},teal:{bg:'#E1F5EE',text:'#085041'},
   purple:{bg:'#EEEDFE',text:'#3C3489'},coral:{bg:'#FAECE7',text:'#712B13'},
@@ -260,130 +243,170 @@ const COLORS={
   pink:{bg:'#FBEAF0',text:'#72243E'},
 };
 const COLOR_KEYS=Object.keys(COLORS);
+
 let schedule={},rates={},currentTZ=null,diffMin=0,currentCell=null,saveTimer=null;
 
+// ── 正確的時區偏移計算 ──
+// 使用 Date 物件直接比較 UTC 與目標時區的分鐘差
+// 避免跨日12小時限制的問題
+function getUTCOffsetMin(tz){
+  try{
+    const base=new Date(2026,3,29,12,0,0); // 春季（大多夏令時間生效）
+    const utcStr=base.toLocaleString('en-US',{timeZone:'UTC',year:'numeric',month:'2-digit',day:'2-digit',hour:'2-digit',minute:'2-digit',hour12:false});
+    const tzStr=base.toLocaleString('en-US',{timeZone:tz,year:'numeric',month:'2-digit',day:'2-digit',hour:'2-digit',minute:'2-digit',hour12:false});
+    const parseLS=s=>{
+      // format: MM/DD/YYYY, HH:MM
+      const[date,time]=s.split(', ');
+      const[m,d,y]=date.split('/').map(Number);
+      const[h,mn]=time.split(':').map(Number);
+      return new Date(y,m-1,d,h,mn).getTime();
+    };
+    return Math.round((parseLS(tzStr)-parseLS(utcStr))/60000);
+  }catch(e){return 0;}
+}
+
+// diffMin = 對照時區UTC偏移 - 台灣UTC偏移 (+480)
+// 例：墨西哥城 = -360 - 480 = -840 min (正確：台灣比墨西哥早14小時)
+function computeDiff(tz){
+  const TW_OFF=getUTCOffsetMin('Asia/Taipei'); // +480
+  return getUTCOffsetMin(tz)-TW_OFF;
+}
+
+function getTZLabel(tz){
+  const off=getUTCOffsetMin(tz);
+  const sign=off>=0?'+':'-';const a=Math.abs(off);
+  return 'GMT'+sign+Math.floor(a/60)+(a%60?':'+String(a%60).padStart(2,'0'):'');
+}
+
+// 台灣 (di 0-6, h 0-23) → 對照時區 (otDi 0-6, otH 0-23)
+function twToOt(di,h){
+  const twTotal=di*1440+h*60;
+  const otTotal=twTotal+diffMin;
+  // 正確的 modulo 處理（JavaScript % 對負數會返回負值）
+  const WEEK=7*1440; // 10080
+  let otDi=Math.floor(((otTotal%WEEK)+WEEK)%WEEK/1440);
+  const otMinInDay=((otTotal%1440)+1440)%1440;
+  const otH=Math.floor(otMinInDay/60);
+  return{di:otDi,h:otH};
+}
+
+// 決定對照課表要顯示哪些小時（以換算後的課程時間為中心，顯示15格）
+function getOTDisplayHours(){
+  // 收集所有對照時區有課的小時
+  const otHours=new Set();
+  Object.keys(schedule).forEach(key=>{
+    const entry=schedule[key];
+    if(!entry||!entry.name)return;
+    const[h,di]=key.split('_').map(Number);
+    const{h:otH}=twToOt(di,h);
+    otHours.add(otH);
+  });
+  if(otHours.size===0){
+    // 預設顯示和台灣同樣範圍換算後的時間
+    const{h:minH}=twToOt(0,7);
+    const startH=(minH+24)%24;
+    const hours=[];
+    for(let i=0;i<15;i++) hours.push((startH+i)%24);
+    return hours;
+  }
+  // 找出最小和最大小時
+  const minH=Math.min(...otHours);
+  const maxH=Math.max(...otHours);
+  // 以課程範圍為主，前後各加2格緩衝，共顯示15~20格
+  const start=Math.max(0,minH-2);
+  const end=Math.min(23,maxH+2);
+  const hours=[];
+  for(let h=start;h<=end;h++) hours.push(h);
+  // 不足15格則補到15格
+  while(hours.length<15&&hours[0]>0) hours.unshift(hours[0]-1);
+  while(hours.length<15&&hours[hours.length-1]<23) hours.push(hours[hours.length-1]+1);
+  return hours;
+}
+
+// ── Firebase 儲存 ──
 function saveData(){
   setSaveStatus('saving');
-  docRef.set({
-    schedule: schedule,
-    rates: rates,
-    updatedAt: firebase.firestore.FieldValue.serverTimestamp()
-  })
-  .then(() => { setSaveStatus('saved'); })
-  .catch(e => { console.error(e); setSaveStatus('error'); });
+  docRef.set({schedule,rates,updatedAt:firebase.firestore.FieldValue.serverTimestamp()})
+    .then(()=>setSaveStatus('saved'))
+    .catch(e=>{console.error(e);setSaveStatus('error');});
 }
-
 function listenCloudData(){
-  docRef.onSnapshot(doc => {
-    if(doc.exists){
-      const data = doc.data();
-      if(data.schedule) schedule = data.schedule;
-      if(data.rates) rates = data.rates;
-      setSaveStatus('saved');
-      renderSched();
-    } else {
-      setSaveStatus('saved');
-      renderSched();
-    }
-  }, err => {
-    console.error("雲端連線失敗:", err);
-    setSaveStatus('error');
-  });
+  docRef.onSnapshot(doc=>{
+    if(doc.exists){const d=doc.data();if(d.schedule)schedule=d.schedule;if(d.rates)rates=d.rates;setSaveStatus('saved');renderSched();}
+    else{setSaveStatus('saved');renderSched();}
+  },err=>{console.error(err);setSaveStatus('error');});
 }
-
 function setSaveStatus(s){
   const el=document.getElementById('save-status');if(!el)return;
   if(s==='saving'){el.textContent='⏳ 雲端同步中...';el.className='save-status saving';}
   else if(s==='saved'){el.textContent='✓ 雲端已同步';el.className='save-status saved';}
-  else{el.textContent='⚠ 同步失敗 (請檢查Firebase規則)';el.className='save-status';}
+  else{el.textContent='⚠ 同步失敗';el.className='save-status';}
 }
-
 function scheduleSave(){clearTimeout(saveTimer);saveTimer=setTimeout(saveData,600);}
 
-function getOffsetDiff(tz){
-  try{
-    const base=new Date(2026,3,29,12,0,0);
-    const tw=base.toLocaleString('en-US',{timeZone:'Asia/Taipei',hour:'2-digit',minute:'2-digit',hour12:false});
-    const ot=base.toLocaleString('en-US',{timeZone:tz,hour:'2-digit',minute:'2-digit',hour12:false});
-    const[twH,twM]=tw.split(':').map(Number);const[otH,otM]=ot.split(':').map(Number);
-    let d=(otH*60+otM)-(twH*60+twM);if(d<-720)d+=1440;if(d>720)d-=1440;return d;
-  }catch(e){return 0;}
+// ── 工具函數 ──
+function fmtHM(totalMin){const m=((totalMin%1440)+1440)%1440;return String(Math.floor(m/60)).padStart(2,'0')+':'+String(m%60).padStart(2,'0');}
+function fmtRangeTW(h){return fmtHM(h*60)+'–'+fmtHM(h*60+60);}
+function fmtRangeOT(h){return fmtHM(h*60)+'–'+fmtHM(h*60+60);}
+function fmtDiff(d){const s=d>=0?'+':'-';const a=Math.abs(d);return s+Math.floor(a/60)+(a%60?':'+String(a%60).padStart(2,'0'):'')+'h';}
+function cellKey(h,di){return h+'_'+di;}
+function isBusy(h,di){const e=schedule[cellKey(h,di)];return !!(e&&e.name);}
+function getStudents(){
+  const map={};Object.values(schedule).forEach(e=>{if(e&&e.name&&!map[e.name])map[e.name]=e.color;});
+  return Object.fromEntries(Object.entries(map).sort((a,b)=>a[0].localeCompare(b[0])));
 }
-function getTZLabel(tz){
-  const diff=getOffsetDiff(tz);const utc=8*60+diff;const sign=utc>=0?'+':'-';const a=Math.abs(utc);
-  return 'GMT'+sign+Math.floor(a/60)+(a%60?':'+String(a%60).padStart(2,'0'):'');
-}
+function sessionCount(name){return Object.values(schedule).filter(e=>e&&e.name===name).length;}
+function incomePerDay(di){let t=0;TW_HOURS.forEach(h=>{const e=schedule[cellKey(h,di)];if(e&&e.name)t+=(rates[e.name]||0);});return t;}
 
-// ── 核心時區轉換函數（台灣時間 di, h 轉為對照時區 otDi, otH） ──
-function twToOt(di, h){
-  const twTotalMin = di * 1440 + h * 60;
-  const otTotalMin = twTotalMin + diffMin;
-  let otDi = Math.floor(((otTotalMin % 10080) + 10080) % 10080 / 1440);
-  const otMinInDay = ((otTotalMin % 1440) + 1440) % 1440;
-  const otH = Math.floor(otMinInDay / 60);
-  return {di: otDi, h: otH};
-}
-
-// ── 建立對照時區的課程資料結構映射 ──
+// ── 對照時區映射 ──
+// otMap[otDi][otH] = [entry...]
 function buildOTMap(){
-  const otMap={};
-  for(let di=0;di<7;di++) otMap[di]={};
+  const otMap={};for(let di=0;di<7;di++)otMap[di]={};
   Object.entries(schedule).forEach(([key,entry])=>{
-    if(entry && entry.name){
-      const[h,di]=key.split('_').map(Number);
-      const{di:otDi,h:otH}=twToOt(di,h);
-      if(otH>=7 && otH<22){
-        if(!otMap[otDi][otH]) otMap[otDi][otH]=[];
-        otMap[otDi][otH].push(entry);
-      }
-    }
+    if(!entry||!entry.name)return;
+    const[h,di]=key.split('_').map(Number);
+    const{di:otDi,h:otH}=twToOt(di,h);
+    if(!otMap[otDi][otH])otMap[otDi][otH]=[];
+    otMap[otDi][otH].push(entry);
   });
   return otMap;
 }
-
-// ── 建立對照時區的忙碌狀態映射（供空檔功能使用） ──
 function buildOTBusyMap(){
-  const busyMap={};
-  for(let di=0;di<7;di++) busyMap[di]={};
+  const busyMap={};for(let di=0;di<7;di++)busyMap[di]={};
   Object.keys(schedule).forEach(key=>{
-    const entry = schedule[key];
-    if(entry && entry.name){
-      const[h,di]=key.split('_').map(Number);
-      const{di:otDi,h:otH}=twToOt(di,h);
-      if(otH>=7 && otH<22) busyMap[otDi][otH]=true;
-    }
+    const e=schedule[key];if(!e||!e.name)return;
+    const[h,di]=key.split('_').map(Number);
+    const{di:otDi,h:otH}=twToOt(di,h);
+    busyMap[otDi][otH]=true;
   });
   return busyMap;
 }
 
-function fmtHM(m){const mm=((m%1440)+1440)%1440;return String(Math.floor(mm/60)).padStart(2,'0')+':'+String(mm%60).padStart(2,'0');}
-function fmtRange(h,shift){return fmtHM(h*60+shift)+'–'+fmtHM(h*60+shift+60);}
-function fmtDiff(d){const s=d>=0?'+':'-';const a=Math.abs(d);return s+Math.floor(a/60)+(a%60?':'+String(a%60).padStart(2,'0'):'')+'h';}
-function cellKey(h,di){return h+'_'+di;}
-function isBusy(h,di) {
-  const entry = schedule[cellKey(h,di)];
-  return !!(entry && entry.name);
-}
-function getStudents(){
-  const map={};Object.values(schedule).forEach(e=>{if(e && e.name && !map[e.name])map[e.name]=e.color;});
-  return Object.fromEntries(Object.entries(map).sort((a,b)=>a[0].localeCompare(b[0])));
-}
-function sessionCount(name){return Object.values(schedule).filter(e=>e && e.name===name).length;}
-function incomePerDay(di){let t=0;HOURS.forEach(h=>{const e=schedule[cellKey(h,di)];if(e && e.name)t+=(rates[e.name]||0);});return t;}
+// ── TZ Select ──
 function buildTZSelect(){
   const sel=document.getElementById('tz-select');let first=-1;
-  TZ_LIST.forEach((t,i)=>{const o=document.createElement('option');o.value=i;o.textContent=t.name;if(t.disabled)o.disabled=true;else if(first<0)first=i;sel.appendChild(o);});
+  TZ_LIST.forEach((t,i)=>{
+    const o=document.createElement('option');o.value=i;o.textContent=t.name;
+    if(t.disabled)o.disabled=true;else if(first<0)first=i;
+    sel.appendChild(o);
+  });
   sel.value=first;currentTZ=TZ_LIST[first];
 }
 function updateTZ(){
-  const idx=parseInt(document.getElementById('tz-select').value);currentTZ=TZ_LIST[idx];diffMin=getOffsetDiff(currentTZ.tz);
+  const idx=parseInt(document.getElementById('tz-select').value);
+  currentTZ=TZ_LIST[idx];diffMin=computeDiff(currentTZ.tz);
   const lbl=getTZLabel(currentTZ.tz);
   document.getElementById('diff-badge').innerHTML='台灣時間 <b>'+fmtDiff(diffMin)+'</b> = <b>'+currentTZ.name+'</b>';
   document.getElementById('other-header').textContent=currentTZ.name+'（'+lbl+'）';
   document.getElementById('free-other-header').textContent=currentTZ.name+'（'+lbl+'）';
   renderSched();
 }
-function renderHead(tid){document.getElementById(tid).innerHTML='<tr><th style="width:60px">時間</th>'+DAYS.map(d=>'<th>'+d+'</th>').join('')+'</tr>';}
+
+// ── 標頭（固定週一到週日） ──
+function renderHead(tid){
+  document.getElementById(tid).innerHTML=
+    '<tr><th style="width:60px">時間</th>'+DAYS.map(d=>'<th>'+d+'</th>').join('')+'</tr>';
+}
 
 function renderSched(){
   ['tw-thead','ot-thead','free-tw-thead','free-ot-thead'].forEach(renderHead);
@@ -391,44 +414,52 @@ function renderSched(){
   renderOTBody('ot-tbody');
   renderFreeTWBody('free-tw-tbody');
   renderFreeOTBody('free-ot-tbody');
-  renderArrows('sched-arrows');renderArrows('free-arrows');
+  renderArrows('sched-arrows',TW_HOURS.length);
+  renderFreeArrows();
   renderLegend();renderIncomeTable();renderDayGrid();renderSummary();
 }
 
-// ── 台灣課表渲染（支援點擊編輯/新增） ──
+// ── 台灣課表（07–21，固定週一到週日，可點擊） ──
 function renderTWBody(tid){
   const tbody=document.getElementById(tid);tbody.innerHTML='';
-  HOURS.forEach(h=>{
+  TW_HOURS.forEach(h=>{
     const tr=document.createElement('tr');
-    const td=document.createElement('td');td.className='time-col';td.textContent=fmtRange(h,0);tr.appendChild(td);
+    const td=document.createElement('td');td.className='time-col';td.textContent=fmtRangeTW(h);tr.appendChild(td);
     DAYS.forEach((_,di)=>{
       const cell=document.createElement('td');cell.className='cell';
       const key=cellKey(h,di);const entry=schedule[key];
-      if(entry && entry.name){
+      if(entry&&entry.name){
         const c=COLORS[entry.color]||COLORS.blue;const rv=rates[entry.name]||0;
-        cell.innerHTML=`<div class="chip" style="background:${c.bg};color:${c.text}"><span class="name">${entry.name}</span>${rv>0?'<span class="rate-tag">NT$'+rv.toLocaleString()+'</span>':''}<button class="del" onclick="deleteEntry(event,'${key}')">✕</button></div>`;
+        cell.innerHTML=`<div class="chip" style="background:${c.bg};color:${c.text}">
+          <span class="name">${entry.name}</span>
+          ${rv>0?'<span class="rate-tag">NT$'+rv.toLocaleString()+'</span>':''}
+          <button class="del" onclick="deleteEntry(event,'${key}')">✕</button>
+        </div>`;
       }else{cell.innerHTML='<div class="plus">+</div>';}
-      cell.onclick = () => openModal(h,di,key);
+      cell.onclick=()=>openModal(h,di,key);
       tr.appendChild(cell);
     });
     tbody.appendChild(tr);
   });
 }
 
-// ── 對照時區課表渲染（自動依據時區換算重組） ──
+// ── 對照時區課表（自動計算顯示範圍15~20格，課程移到正確欄位） ──
 function renderOTBody(tid){
   const tbody=document.getElementById(tid);tbody.innerHTML='';
   const otMap=buildOTMap();
-  HOURS.forEach(h=>{
+  const otHours=getOTDisplayHours();
+  otHours.forEach(h=>{
     const tr=document.createElement('tr');
-    const td=document.createElement('td');td.className='time-col';td.textContent=fmtRange(h,diffMin);tr.appendChild(td);
+    const td=document.createElement('td');td.className='time-col';td.textContent=fmtRangeOT(h);tr.appendChild(td);
+    // 固定週一到週日
     DAYS.forEach((_,otDi)=>{
       const cell=document.createElement('td');cell.className='cell mirror';
       const entries=otMap[otDi]&&otMap[otDi][h]?otMap[otDi][h]:[];
       if(entries.length>0){
-        const entry=entries[0];
-        const c=COLORS[entry.color]||COLORS.blue;
-        cell.innerHTML=`<div class="chip mirror-chip" style="background:${c.bg};color:${c.text}"><span class="name">${entry.name}</span></div>`;
+        const entry=entries[0];const c=COLORS[entry.color]||COLORS.blue;
+        cell.innerHTML=`<div class="chip mirror-chip" style="background:${c.bg};color:${c.text}">
+          <span class="name">${entry.name}</span>
+        </div>`;
       }
       tr.appendChild(cell);
     });
@@ -436,12 +467,12 @@ function renderOTBody(tid){
   });
 }
 
-// ── 台灣空檔渲染 ──
+// ── 台灣空檔（07–21） ──
 function renderFreeTWBody(tid){
   const tbody=document.getElementById(tid);tbody.innerHTML='';
-  HOURS.forEach(h=>{
+  TW_HOURS.forEach(h=>{
     const tr=document.createElement('tr');
-    const td=document.createElement('td');td.className='time-col';td.textContent=fmtRange(h,0);tr.appendChild(td);
+    const td=document.createElement('td');td.className='time-col';td.textContent=fmtRangeTW(h);tr.appendChild(td);
     DAYS.forEach((_,di)=>{
       const cell=document.createElement('td');cell.className='cell free-cell';
       cell.innerHTML=isBusy(h,di)?'<div class="free-busy"></div>':'<div class="free-libre">Libre</div>';
@@ -451,16 +482,17 @@ function renderFreeTWBody(tid){
   });
 }
 
-// ── 對照時區空檔渲染（空檔也根據時區精確換位） ──
+// ── 對照時區空檔（同樣用 getOTDisplayHours，課程位置移到正確欄） ──
 function renderFreeOTBody(tid){
   const tbody=document.getElementById(tid);tbody.innerHTML='';
   const busyMap=buildOTBusyMap();
-  HOURS.forEach(h=>{
+  const otHours=getOTDisplayHours();
+  otHours.forEach(h=>{
     const tr=document.createElement('tr');
-    const td=document.createElement('td');td.className='time-col';td.textContent=fmtRange(h,diffMin);tr.appendChild(td);
+    const td=document.createElement('td');td.className='time-col';td.textContent=fmtRangeOT(h);tr.appendChild(td);
     DAYS.forEach((_,otDi)=>{
       const cell=document.createElement('td');cell.className='cell free-cell';
-      const busy=busyMap[otDi] && busyMap[otDi][h];
+      const busy=busyMap[otDi]&&busyMap[otDi][h];
       cell.innerHTML=busy?'<div class="free-busy"></div>':'<div class="free-libre">Libre</div>';
       tr.appendChild(cell);
     });
@@ -468,43 +500,77 @@ function renderFreeOTBody(tid){
   });
 }
 
-function renderArrows(id){const col=document.getElementById(id);col.innerHTML='';HOURS.forEach(()=>{const r=document.createElement('div');r.className='arrow-row';r.textContent='→';col.appendChild(r);});}
+function renderArrows(id,count){
+  const col=document.getElementById(id);if(!col)return;col.innerHTML='';
+  for(let i=0;i<count;i++){const r=document.createElement('div');r.className='arrow-row';r.textContent='→';col.appendChild(r);}
+}
+function renderFreeArrows(){
+  // 空檔兩側行數可能不同，以台灣側為準
+  renderArrows('free-arrows',TW_HOURS.length);
+}
+
 function renderLegend(){
   const students=getStudents();const leg=document.getElementById('legend');leg.innerHTML='';
-  Object.entries(students).forEach(([n,c])=>{const col=COLORS[c]||COLORS.blue;leg.innerHTML+=`<div class="leg-item"><div class="leg-dot" style="background:${col.bg};border:1px solid ${col.text}50"></div>${n}</div>`;});
+  Object.entries(students).forEach(([n,c])=>{
+    const col=COLORS[c]||COLORS.blue;
+    leg.innerHTML+=`<div class="leg-item"><div class="leg-dot" style="background:${col.bg};border:1px solid ${col.text}50"></div>${n}</div>`;
+  });
 }
-function commitRate(name,val){rates[name]=parseInt(val)||0;renderTWBody('tw-tbody');renderDayGrid();renderSummary();renderIncomeTable();scheduleSave();}
+
+function commitRate(name,val){
+  rates[name]=parseInt(val)||0;
+  renderTWBody('tw-tbody');renderDayGrid();renderSummary();renderIncomeTable();scheduleSave();
+}
+
 function renderIncomeTable(){
   const students=getStudents();
-  Object.keys(rates).forEach(n=>{if(!students[n])delete rates[n];});Object.keys(students).forEach(n=>{if(rates[n]==null)rates[n]=0;});
-  const tbody=document.getElementById('rate-body');const tfoot=document.getElementById('rate-foot');tbody.innerHTML='';let weeklyTotal=0;
+  Object.keys(rates).forEach(n=>{if(!students[n])delete rates[n];});
+  Object.keys(students).forEach(n=>{if(rates[n]==null)rates[n]=0;});
+  const tbody=document.getElementById('rate-body');const tfoot=document.getElementById('rate-foot');
+  tbody.innerHTML='';let weeklyTotal=0;
   Object.entries(students).forEach(([name,color])=>{
-    const c=COLORS[color]||COLORS.blue;const cnt=sessionCount(name);const rate=rates[name]||0;const weekly=cnt*rate;const monthly=weekly*MONTHLY_MULT;weeklyTotal+=weekly;
+    const c=COLORS[color]||COLORS.blue;const cnt=sessionCount(name);const rate=rates[name]||0;
+    const weekly=cnt*rate;const monthly=weekly*MONTHLY_MULT;weeklyTotal+=weekly;
     const tr=document.createElement('tr');
-    tr.innerHTML=`<td><span class="sdot" style="background:${c.bg};border:1px solid ${c.text}40"></span></td><td>${name}</td><td class="num"><input class="rate-input" type="number" min="0" step="100" value="${rate}" data-name="${name}"/></td><td class="num">${cnt}</td><td class="num">${weekly>0?'NT$ '+weekly.toLocaleString():'—'}</td><td class="num">${monthly>0?'NT$ '+monthly.toLocaleString():'—'}</td>`;
+    tr.innerHTML=`<td><span class="sdot" style="background:${c.bg};border:1px solid ${c.text}40"></span></td>
+      <td>${name}</td>
+      <td class="num"><input class="rate-input" type="number" min="0" step="100" value="${rate}" data-name="${name}"/></td>
+      <td class="num">${cnt}</td>
+      <td class="num">${weekly>0?'NT$ '+weekly.toLocaleString():'—'}</td>
+      <td class="num">${monthly>0?'NT$ '+monthly.toLocaleString():'—'}</td>`;
     tbody.appendChild(tr);
   });
-  const totalSessions=Object.keys(students).reduce((a,n)=>a+sessionCount(n),0);const monthlyTotal=weeklyTotal*MONTHLY_MULT;
-  tfoot.innerHTML=`<tr><td></td><td style="font-weight:500">合計</td><td></td><td class="num" style="font-weight:500">${totalSessions}</td><td class="num" style="font-weight:500">${weeklyTotal>0?'NT$ '+weeklyTotal.toLocaleString():'—'}</td><td class="num" style="font-weight:500">${monthlyTotal>0?'NT$ '+monthlyTotal.toLocaleString():'—'}</td></tr>`;
+  const totalSessions=Object.keys(students).reduce((a,n)=>a+sessionCount(n),0);
+  const monthlyTotal=weeklyTotal*MONTHLY_MULT;
+  tfoot.innerHTML=`<tr><td></td><td style="font-weight:500">合計</td><td></td>
+    <td class="num" style="font-weight:500">${totalSessions}</td>
+    <td class="num" style="font-weight:500">${weeklyTotal>0?'NT$ '+weeklyTotal.toLocaleString():'—'}</td>
+    <td class="num" style="font-weight:500">${monthlyTotal>0?'NT$ '+monthlyTotal.toLocaleString():'—'}</td></tr>`;
   document.querySelectorAll('.rate-input').forEach(inp=>{
-    inp.onkeydown = e=>{if(e.key==='Enter'){e.preventDefault();inp.blur();commitRate(inp.dataset.name,inp.value);}};
-    inp.onblur = ()=>{commitRate(inp.dataset.name,inp.value);};
+    inp.onkeydown=e=>{if(e.key==='Enter'){e.preventDefault();inp.blur();commitRate(inp.dataset.name,inp.value);}};
+    inp.onblur=()=>{commitRate(inp.dataset.name,inp.value);};
   });
 }
+
 function renderDayGrid(){
   const grid=document.getElementById('day-grid');grid.innerHTML='';
   DAYS.forEach((_,di)=>{
-    const income=incomePerDay(di);const hrs=HOURS.filter(h=>isBusy(h,di)).length;
+    const income=incomePerDay(di);const hrs=TW_HOURS.filter(h=>isBusy(h,di)).length;
     const div=document.createElement('div');div.className='day-card';
-    div.innerHTML=`<div class="day-name">週${DAYS[di]}</div><div class="day-val">${income>0?'NT$<br>'+income.toLocaleString():'—'}</div><div class="day-hrs">${hrs>0?hrs+'堂':''}</div>`;
+    div.innerHTML=`<div class="day-name">週${DAYS[di]}</div>
+      <div class="day-val">${income>0?'NT$<br>'+income.toLocaleString():'—'}</div>
+      <div class="day-hrs">${hrs>0?hrs+'堂':''}</div>`;
     grid.appendChild(div);
   });
 }
+
 function renderSummary(){
-  const students=getStudents();const weeklyTotal=Object.keys(students).reduce((s,n)=>s+sessionCount(n)*(rates[n]||0),0);
+  const students=getStudents();
+  const weeklyTotal=Object.keys(students).reduce((s,n)=>s+sessionCount(n)*(rates[n]||0),0);
   const monthlyTotal=weeklyTotal*MONTHLY_MULT;const monthly70=Math.round(monthlyTotal*0.7);
   const totalSessions=Object.keys(students).reduce((a,n)=>a+sessionCount(n),0);
-  const activeDays=DAYS.filter((_,di)=>HOURS.some(h=>isBusy(h,di))).length;const avg=totalSessions>0?Math.round(weeklyTotal/totalSessions):0;
+  const activeDays=DAYS.filter((_,di)=>TW_HOURS.some(h=>isBusy(h,di))).length;
+  const avg=totalSessions>0?Math.round(weeklyTotal/totalSessions):0;
   document.getElementById('summary-cards').innerHTML=`
     <div class="card"><div class="card-label">每週總收入</div><div class="card-value">${weeklyTotal>0?'NT$ '+weeklyTotal.toLocaleString():'—'}</div><div class="card-sub">${totalSessions} 堂／週</div></div>
     <div class="card"><div class="card-label">每月預估收入</div><div class="card-value">${monthlyTotal>0?'NT$ '+monthlyTotal.toLocaleString():'—'}</div><div class="card-sub">× 4 週（100%）</div></div>
@@ -513,24 +579,25 @@ function renderSummary(){
     <div class="card"><div class="card-label">授課天數</div><div class="card-value">${activeDays} 天</div><div class="card-sub">每週上課日</div></div>`;
 }
 
-// ── 圖片導出功能（空檔匯出也跟隨新映射邏輯，保證導出圖片完全正確） ──
+// ── 匯出圖片 ──
 function exportFreeImage(side){
-  const isTW=(side==='tw');const shift=isTW?0:diffMin;const lbl=isTW?'GMT+8':getTZLabel(currentTZ.tz);
+  const isTW=(side==='tw');const lbl=isTW?'GMT+8':getTZLabel(currentTZ.tz);
   const title=isTW?'空檔時間（台灣時間 GMT+8）':'空檔時間（'+currentTZ.name+' '+lbl+'）';
   const filename=isTW?'libre_taiwan.png':'libre_'+currentTZ.name.replace(/[^a-zA-Z0-9]/g,'_')+'.png';
-  
   const busyMap=buildOTBusyMap();
+  const hours=isTW?TW_HOURS:getOTDisplayHours();
   const wrap=document.createElement('div');wrap.className='export-wrap';wrap.style.width='640px';
   const titleEl=document.createElement('div');titleEl.className='export-title';titleEl.textContent=title;wrap.appendChild(titleEl);
   const table=document.createElement('table');const thead=document.createElement('thead');
-  thead.innerHTML='<tr><th style="width:80px">時間</th>'+DAYS.map(d=>'<th>'+d+'</th>').join('')+'</tr>';table.appendChild(thead);
+  thead.innerHTML='<tr><th style="width:80px">時間</th>'+DAYS.map(d=>'<th>'+d+'</th>').join('')+'</tr>';
+  table.appendChild(thead);
   const tbody=document.createElement('tbody');
-  
-  HOURS.forEach(h=>{
-    const tr=document.createElement('tr');const td=document.createElement('td');td.className='tc';td.textContent=fmtRange(h,shift);tr.appendChild(td);
+  hours.forEach(h=>{
+    const tr=document.createElement('tr');
+    const td=document.createElement('td');td.className='tc';td.textContent=isTW?fmtRangeTW(h):fmtRangeOT(h);tr.appendChild(td);
     DAYS.forEach((_,di)=>{
       const cell=document.createElement('td');cell.className='ec';
-      const busy=isTW?isBusy(h,di):(busyMap[di] && busyMap[di][h]);
+      const busy=isTW?isBusy(h,di):(busyMap[di]&&busyMap[di][h]);
       cell.innerHTML=busy?'<div class="export-busy"></div>':'<div class="export-libre">Libre</div>';
       tr.appendChild(cell);
     });
@@ -538,14 +605,137 @@ function exportFreeImage(side){
   });
   table.appendChild(tbody);wrap.appendChild(table);document.body.appendChild(wrap);
   html2canvas(wrap,{scale:2,backgroundColor:'#ffffff',useCORS:true}).then(canvas=>{
-    document.body.removeChild(wrap);const link=document.createElement('a');link.download=filename;link.href=canvas.toDataURL('image/png');link.click();
+    document.body.removeChild(wrap);
+    const link=document.createElement('a');link.download=filename;link.href=canvas.toDataURL('image/png');link.click();
   }).catch(err=>{if(document.body.contains(wrap))document.body.removeChild(wrap);alert('匯出失敗：'+err.message);});
 }
 
+// ── 分享空檔連結 ──
+function showShareLink(){
+  // 把目前的空檔資料、時區資訊編碼進 URL
+  const busyMap=buildOTBusyMap();
+  const otHours=getOTDisplayHours();
+  const payload={
+    tz:currentTZ.tz,
+    tzName:currentTZ.name,
+    tzLabel:getTZLabel(currentTZ.tz),
+    // 儲存對照時區的空閒格子：[di, h] 陣列
+    free:[],
+  };
+  DAYS.forEach((_,di)=>{
+    otHours.forEach(h=>{
+      const busy=busyMap[di]&&busyMap[di][h];
+      if(!busy) payload.free.push([di,h]);
+    });
+  });
+  payload.hours=otHours;
+
+  // 用 base64 編碼
+  const encoded=btoa(unescape(encodeURIComponent(JSON.stringify(payload))));
+  // 建立公開頁面的 URL（同一個 HTML 但加上 #free= 參數）
+  const baseUrl=window.location.href.split('#')[0].split('?')[0];
+  const shareUrl=baseUrl+'?view=free&data='+encoded;
+
+  document.getElementById('modal-mount').innerHTML=`<div class="share-popup"><div class="share-box">
+    <h3>🔗 分享空檔連結</h3>
+    <p>複製以下連結給學生，他們可以直接查看你目前的空檔時間（${currentTZ.name}）。</p>
+    <textarea class="share-url" readonly onclick="this.select()">${shareUrl}</textarea>
+    <div class="share-btns">
+      <button onclick="copyShareUrl('${shareUrl.replace(/'/g,"\\'")}')">複製連結</button>
+      <button onclick="window.open('${shareUrl.replace(/'/g,"\\'")}','_blank')">預覽頁面</button>
+      <button onclick="closeModal()">關閉</button>
+    </div>
+  </div></div>`;
+}
+
+function copyShareUrl(url){
+  navigator.clipboard.writeText(url).then(()=>{
+    alert('連結已複製！');
+  }).catch(()=>{
+    // fallback
+    const ta=document.querySelector('.share-url');ta.select();document.execCommand('copy');
+    alert('連結已複製！');
+  });
+}
+
+// ── 學生檢視模式（當 URL 有 ?view=free 時顯示） ──
+function checkViewMode(){
+  const params=new URLSearchParams(window.location.search);
+  if(params.get('view')==='free'){
+    try{
+      const raw=params.get('data');
+      const payload=JSON.parse(decodeURIComponent(escape(atob(raw))));
+      renderStudentView(payload);
+      return true;
+    }catch(e){console.error(e);}
+  }
+  return false;
+}
+
+function renderStudentView(payload){
+  document.body.innerHTML='';
+  const style=document.createElement('style');
+  style.textContent=`
+    *{box-sizing:border-box;margin:0;padding:0}
+    body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;padding:16px;background:#fff;color:#222}
+    .sv-header{background:#E1F5EE;border:1px solid #9FE1CB;border-radius:10px;padding:16px 20px;margin-bottom:20px}
+    .sv-header h1{font-size:16px;font-weight:700;color:#085041;margin-bottom:8px}
+    .sv-header p{font-size:13px;color:#085041;line-height:1.6;margin:4px 0}
+    .sv-tz{font-size:12px;color:#27500A;margin-top:8px;font-weight:500}
+    .tbl-wrap{overflow-x:auto}
+    table{border-collapse:collapse;font-size:11px;width:100%;min-width:480px}
+    th{background:#f0f0f0;color:#444;font-weight:600;padding:5px 4px;border:1px solid #ccc;text-align:center;font-size:10px}
+    td.tc{background:#f0f0f0;color:#555;font-size:10px;padding:3px 5px;border:1px solid #ccc;text-align:center;white-space:nowrap;width:70px;height:40px;vertical-align:middle}
+    td.ec{border:1px solid #ccc;padding:2px;height:40px;vertical-align:middle}
+    .libre{background:#FDE68A;height:100%;display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:700;color:#111;border-radius:3px}
+    .busy{background:#e8e8e8;height:100%;border-radius:3px}
+  `;
+  document.head.appendChild(style);
+
+  const header=document.createElement('div');header.className='sv-header';
+  header.innerHTML=`
+    <h1>📅 我的空檔時間 / Mis Horarios Disponibles</h1>
+    <p>這是目前我有的空檔時間，你可以依照你的空檔和我約上課時間。</p>
+    <p><em>Estos son mis horarios libres actuales. Puedes contactarme según tu disponibilidad para programar una clase.</em></p>
+    <div class="sv-tz">🌍 時區 / Zona horaria：${payload.tzName}（${payload.tzLabel}）</div>
+  `;
+  document.body.appendChild(header);
+
+  const days=['一','二','三','四','五','六','日'];
+  const freeSet=new Set(payload.free.map(([d,h])=>d+'_'+h));
+
+  const wrap=document.createElement('div');wrap.className='tbl-wrap';
+  const table=document.createElement('table');
+  const thead=document.createElement('thead');
+  thead.innerHTML='<tr><th>時間</th>'+days.map(d=>'<th>週'+d+'</th>').join('')+'</tr>';
+  table.appendChild(thead);
+  const tbody=document.createElement('tbody');
+  payload.hours.forEach(h=>{
+    const tr=document.createElement('tr');
+    const td=document.createElement('td');td.className='tc';
+    const hh=String(h).padStart(2,'0');const hh2=String((h+1)%24).padStart(2,'0');
+    td.textContent=hh+':00–'+hh2+':00';tr.appendChild(td);
+    days.forEach((_,di)=>{
+      const cell=document.createElement('td');cell.className='ec';
+      const isFree=freeSet.has(di+'_'+h);
+      cell.innerHTML=isFree?'<div class="libre">Libre</div>':'<div class="busy"></div>';
+      tr.appendChild(cell);
+    });
+    tbody.appendChild(tr);
+  });
+  table.appendChild(tbody);wrap.appendChild(table);document.body.appendChild(wrap);
+}
+
+// ── 新增/編輯 modal ──
 function openModal(h,di,key){
   currentCell={h,di,key};const e=schedule[key]||{};
   const opts=COLOR_KEYS.map(k=>`<option value="${k}"${(e.color||'blue')===k?' selected':''}>${k}</option>`).join('');
-  document.getElementById('modal-mount').innerHTML=`<div class="modal-overlay"><div class="modal"><h3>${e.name?'編輯學生':'新增學生'}</h3><label>學生姓名</label><input type="text" id="m-name" placeholder="請輸入姓名" value="${e.name||''}"/><label>顏色標記</label><select id="m-color">${opts}</select><div class="modal-btns"><button onclick="closeModal()">取消</button><button class="primary" onclick="saveEntry()">儲存</button></div></div></div>`;
+  document.getElementById('modal-mount').innerHTML=`<div class="modal-overlay"><div class="modal">
+    <h3>${e.name?'編輯學生':'新增學生'}</h3>
+    <label>學生姓名</label><input type="text" id="m-name" placeholder="請輸入姓名" value="${e.name||''}"/>
+    <label>顏色標記</label><select id="m-color">${opts}</select>
+    <div class="modal-btns"><button onclick="closeModal()">取消</button><button class="primary" onclick="saveEntry()">儲存</button></div>
+  </div></div>`;
   setTimeout(()=>document.getElementById('m-name').focus(),50);
 }
 function closeModal(){document.getElementById('modal-mount').innerHTML='';currentCell=null;}
@@ -557,9 +747,12 @@ function deleteEntry(e,key){e.stopPropagation();delete schedule[key];renderSched
 function clearAll(){if(confirm('確定要清空整張課表嗎？')){schedule={};rates={};renderSched();scheduleSave();}}
 document.addEventListener('keydown',e=>{if(e.key==='Escape')closeModal();});
 
-buildTZSelect();
-updateTZ();
-listenCloudData();
+// ── 啟動 ──
+if(!checkViewMode()){
+  buildTZSelect();
+  updateTZ();
+  listenCloudData();
+}
 </script>
 </body>
 </html>
