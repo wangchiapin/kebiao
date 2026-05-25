@@ -1,3 +1,4 @@
+
 <!DOCTYPE html>
 <html lang="zh-TW">
 <head>
@@ -612,33 +613,34 @@ function exportFreeImage(side){
 
 // ── 分享空檔連結 ──
 function showShareLink(){
-  // 把目前的空檔資料、時區資訊編碼進 URL
   const busyMap=buildOTBusyMap();
   const otHours=getOTDisplayHours();
+  // 台灣空檔資料
+  const twFree=[];
+  TW_HOURS.forEach(h=>{
+    DAYS.forEach((_,di)=>{if(!isBusy(h,di))twFree.push([di,h]);});
+  });
+  // 對照時區空檔資料
+  const otFree=[];
+  DAYS.forEach((_,di)=>{
+    otHours.forEach(h=>{if(!(busyMap[di]&&busyMap[di][h]))otFree.push([di,h]);});
+  });
   const payload={
     tz:currentTZ.tz,
     tzName:currentTZ.name,
     tzLabel:getTZLabel(currentTZ.tz),
-    // 儲存對照時區的空閒格子：[di, h] 陣列
-    free:[],
+    twHours:TW_HOURS,
+    twFree:twFree,
+    otHours:otHours,
+    otFree:otFree,
   };
-  DAYS.forEach((_,di)=>{
-    otHours.forEach(h=>{
-      const busy=busyMap[di]&&busyMap[di][h];
-      if(!busy) payload.free.push([di,h]);
-    });
-  });
-  payload.hours=otHours;
-
-  // 用 base64 編碼
   const encoded=btoa(unescape(encodeURIComponent(JSON.stringify(payload))));
-  // 建立公開頁面的 URL（同一個 HTML 但加上 #free= 參數）
   const baseUrl=window.location.href.split('#')[0].split('?')[0];
   const shareUrl=baseUrl+'?view=free&data='+encoded;
 
   document.getElementById('modal-mount').innerHTML=`<div class="share-popup"><div class="share-box">
     <h3>🔗 分享空檔連結</h3>
-    <p>複製以下連結給學生，他們可以直接查看你目前的空檔時間（${currentTZ.name}）。</p>
+    <p>複製以下連結給學生，點開後只會看到台灣時間與${currentTZ.name}的空檔對照表。</p>
     <textarea class="share-url" readonly onclick="this.select()">${shareUrl}</textarea>
     <div class="share-btns">
       <button onclick="copyShareUrl('${shareUrl.replace(/'/g,"\\'")}')">複製連結</button>
@@ -649,22 +651,16 @@ function showShareLink(){
 }
 
 function copyShareUrl(url){
-  navigator.clipboard.writeText(url).then(()=>{
-    alert('連結已複製！');
-  }).catch(()=>{
-    // fallback
-    const ta=document.querySelector('.share-url');ta.select();document.execCommand('copy');
-    alert('連結已複製！');
-  });
+  navigator.clipboard.writeText(url).then(()=>{alert('連結已複製！');})
+  .catch(()=>{const ta=document.querySelector('.share-url');ta.select();document.execCommand('copy');alert('連結已複製！');});
 }
 
-// ── 學生檢視模式（當 URL 有 ?view=free 時顯示） ──
+// ── 學生檢視模式（只顯示空檔，無其他內容） ──
 function checkViewMode(){
   const params=new URLSearchParams(window.location.search);
   if(params.get('view')==='free'){
     try{
-      const raw=params.get('data');
-      const payload=JSON.parse(decodeURIComponent(escape(atob(raw))));
+      const payload=JSON.parse(decodeURIComponent(escape(atob(params.get('data')))));
       renderStudentView(payload);
       return true;
     }catch(e){console.error(e);}
@@ -677,53 +673,75 @@ function renderStudentView(payload){
   const style=document.createElement('style');
   style.textContent=`
     *{box-sizing:border-box;margin:0;padding:0}
-    body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;padding:16px;background:#fff;color:#222}
-    .sv-header{background:#E1F5EE;border:1px solid #9FE1CB;border-radius:10px;padding:16px 20px;margin-bottom:20px}
-    .sv-header h1{font-size:16px;font-weight:700;color:#085041;margin-bottom:8px}
-    .sv-header p{font-size:13px;color:#085041;line-height:1.6;margin:4px 0}
-    .sv-tz{font-size:12px;color:#27500A;margin-top:8px;font-weight:500}
-    .tbl-wrap{overflow-x:auto}
-    table{border-collapse:collapse;font-size:11px;width:100%;min-width:480px}
-    th{background:#f0f0f0;color:#444;font-weight:600;padding:5px 4px;border:1px solid #ccc;text-align:center;font-size:10px}
-    td.tc{background:#f0f0f0;color:#555;font-size:10px;padding:3px 5px;border:1px solid #ccc;text-align:center;white-space:nowrap;width:70px;height:40px;vertical-align:middle}
-    td.ec{border:1px solid #ccc;padding:2px;height:40px;vertical-align:middle}
-    .libre{background:#FDE68A;height:100%;display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:700;color:#111;border-radius:3px}
-    .busy{background:#e8e8e8;height:100%;border-radius:3px}
+    body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;padding:16px 12px;background:#fff;color:#222;max-width:900px;margin:0 auto}
+    .sv-header{background:#E1F5EE;border:1px solid #9FE1CB;border-radius:10px;padding:16px 20px;margin-bottom:22px}
+    .sv-header h1{font-size:17px;font-weight:700;color:#085041;margin-bottom:8px}
+    .sv-header .zh{font-size:13px;color:#085041;margin:4px 0;line-height:1.6}
+    .sv-header .es{font-size:13px;color:#0a6652;margin:4px 0;line-height:1.6;font-style:italic}
+    .sv-tz{font-size:12px;color:#27500A;margin-top:10px;font-weight:500}
+    .sv-section{font-size:12px;font-weight:600;color:#444;margin-bottom:6px;margin-top:20px;padding-bottom:4px;border-bottom:1px solid #eee}
+    .sv-section:first-of-type{margin-top:4px}
+    .panel-header{font-size:12px;font-weight:500;text-align:center;padding:5px 4px;border:1px solid #ddd;border-bottom:none;border-radius:6px 6px 0 0}
+    .ph-tw{background:#E6F1FB;color:#0C447C;border-color:#B5D4F4}
+    .ph-ot{background:#F0F4FF;color:#1A3A8F;border-color:#A8BEF5}
+    .tbl-wrap{overflow-x:auto;margin-bottom:18px}
+    table{border-collapse:collapse;font-size:11px;width:100%;min-width:480px;table-layout:fixed}
+    th{background:#f0f0f0;color:#444;font-weight:600;padding:5px 2px;border:1px solid #ccc;text-align:center;font-size:10px}
+    td.tc{background:#f0f0f0;color:#555;font-size:9px;padding:2px 3px;border:1px solid #ccc;text-align:center;white-space:nowrap;width:62px;height:38px;vertical-align:middle}
+    td.ec{border:1px solid #ccc;padding:2px;height:38px;vertical-align:middle}
+    .libre{background:#FDE68A;height:100%;display:flex;align-items:center;justify-content:center;font-size:9px;font-weight:700;color:#111;border-radius:3px}
+    .busy{background:#1a1a1a;height:100%;border-radius:3px}
+    @media(max-width:600px){table{min-width:400px}}
   `;
   document.head.appendChild(style);
 
+  const days=['一','二','三','四','五','六','日'];
+
+  // 標題區
   const header=document.createElement('div');header.className='sv-header';
   header.innerHTML=`
-    <h1>📅 我的空檔時間 / Mis Horarios Disponibles</h1>
-    <p>這是目前我有的空檔時間，你可以依照你的空檔和我約上課時間。</p>
-    <p><em>Estos son mis horarios libres actuales. Puedes contactarme según tu disponibilidad para programar una clase.</em></p>
-    <div class="sv-tz">🌍 時區 / Zona horaria：${payload.tzName}（${payload.tzLabel}）</div>
+    <h1>📅 空檔時間 / Horarios Disponibles</h1>
+    <p class="zh">這是目前我有的空檔時間，你可以依照你的空檔和我約上課時間。</p>
+    <p class="es">Estos son mis horarios libres actuales. Puedes contactarme según tu disponibilidad para programar una clase.</p>
+    <div class="sv-tz">🌏 台灣時間 GMT+8 &nbsp;·&nbsp; 🌍 ${payload.tzName}（${payload.tzLabel}）</div>
   `;
   document.body.appendChild(header);
 
-  const days=['一','二','三','四','五','六','日'];
-  const freeSet=new Set(payload.free.map(([d,h])=>d+'_'+h));
-
-  const wrap=document.createElement('div');wrap.className='tbl-wrap';
-  const table=document.createElement('table');
-  const thead=document.createElement('thead');
-  thead.innerHTML='<tr><th>時間</th>'+days.map(d=>'<th>週'+d+'</th>').join('')+'</tr>';
-  table.appendChild(thead);
-  const tbody=document.createElement('tbody');
-  payload.hours.forEach(h=>{
-    const tr=document.createElement('tr');
-    const td=document.createElement('td');td.className='tc';
-    const hh=String(h).padStart(2,'0');const hh2=String((h+1)%24).padStart(2,'0');
-    td.textContent=hh+':00–'+hh2+':00';tr.appendChild(td);
-    days.forEach((_,di)=>{
-      const cell=document.createElement('td');cell.className='ec';
-      const isFree=freeSet.has(di+'_'+h);
-      cell.innerHTML=isFree?'<div class="libre">Libre</div>':'<div class="busy"></div>';
-      tr.appendChild(cell);
+  function buildFreeTable(hours, freeList, panelClass, panelLabel){
+    const freeSet=new Set(freeList.map(([d,h])=>d+'_'+h));
+    const ph=document.createElement('div');ph.className='panel-header '+panelClass;ph.textContent=panelLabel;
+    const wrap=document.createElement('div');wrap.className='tbl-wrap';
+    const table=document.createElement('table');
+    const thead=document.createElement('thead');
+    thead.innerHTML='<tr><th style="width:62px">時間</th>'+days.map(d=>'<th>'+d+'</th>').join('')+'</tr>';
+    table.appendChild(thead);
+    const tbody=document.createElement('tbody');
+    hours.forEach(h=>{
+      const hh=String(h).padStart(2,'0');const hh2=String((h+1)%24).padStart(2,'0');
+      const tr=document.createElement('tr');
+      const td=document.createElement('td');td.className='tc';td.textContent=hh+':00–'+hh2+':00';tr.appendChild(td);
+      days.forEach((_,di)=>{
+        const cell=document.createElement('td');cell.className='ec';
+        cell.innerHTML=freeSet.has(di+'_'+h)?'<div class="libre">Libre</div>':'<div class="busy"></div>';
+        tr.appendChild(cell);
+      });
+      tbody.appendChild(tr);
     });
-    tbody.appendChild(tr);
-  });
-  table.appendChild(tbody);wrap.appendChild(table);document.body.appendChild(wrap);
+    table.appendChild(tbody);wrap.appendChild(table);
+    return{ph,wrap};
+  }
+
+  // 台灣時間表
+  const secTW=document.createElement('div');secTW.className='sv-section';secTW.textContent='🇹🇼 台灣時間（GMT+8）';
+  document.body.appendChild(secTW);
+  const{ph:phTW,wrap:wrapTW}=buildFreeTable(payload.twHours,payload.twFree,'ph-tw','台灣時間（GMT+8）');
+  document.body.appendChild(phTW);document.body.appendChild(wrapTW);
+
+  // 對照時區表
+  const secOT=document.createElement('div');secOT.className='sv-section';secOT.textContent='🌍 '+payload.tzName+'（'+payload.tzLabel+'）';
+  document.body.appendChild(secOT);
+  const{ph:phOT,wrap:wrapOT}=buildFreeTable(payload.otHours,payload.otFree,'ph-ot',payload.tzName+'（'+payload.tzLabel+'）');
+  document.body.appendChild(phOT);document.body.appendChild(wrapOT);
 }
 
 // ── 新增/編輯 modal ──
